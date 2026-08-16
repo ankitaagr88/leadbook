@@ -8,6 +8,7 @@ industry.
 
 | File | |
 |---|---|
+| `SETUP_GUIDE.md` | **Start here.** Click-by-click walkthrough of setting up an agent's Sheet |
 | `Seed.gs` | The starter products and their document lists. **The only insurance-specific code in the system** |
 | `config-[slug].json` | One per agent. Copy `/config.example.json`, never this |
 | `[slug]/index.html` | Redirect stub so her link is `leadbook.ai4work.in/insurance/[slug]/` |

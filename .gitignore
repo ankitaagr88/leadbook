@@ -25,6 +25,7 @@
 # Deliberately NOT `!insurance/*` — that would publish DOU.md and the proposal.
 !insurance/
 !insurance/README.md
+!insurance/SETUP_GUIDE.md
 !insurance/Seed.gs
 !insurance/config-*.json
 !insurance/*/
