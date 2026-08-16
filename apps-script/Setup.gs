@@ -14,8 +14,8 @@ var HEADERS = {
   'Products':     ['Product', 'Description', 'SortOrder', 'Active'],
   'DocTemplates': ['Product', 'DocName', 'SortOrder'],
   'Leads':        ['LeadID', 'Name', 'Phone', 'Address', 'City', 'Area', 'Product',
-                   'NextVisitDate', 'NextStep', 'CreatedDate', 'Status'],
-  'FollowUps':    ['FollowUpID', 'LeadID', 'Date', 'Note', 'LoggedAt'],
+                   'ReferredBy', 'NextVisitDate', 'NextStep', 'CreatedDate', 'Status'],
+  'FollowUps':    ['FollowUpID', 'LeadID', 'Date', 'Type', 'Note', 'LoggedAt'],
   'Documents':    ['DocID', 'LeadID', 'DocName', 'Shared', 'UpdatedAt']
 };
 

@@ -209,6 +209,7 @@
   }
   .chip-row::-webkit-scrollbar{display:none;}
   .chip-row:empty{ display:none; }
+  .type-row{ padding:0; }
   .chip-label{
     flex-shrink:0;
     font-family:'IBM Plex Mono', monospace;
@@ -663,6 +664,36 @@
   .product-card.off{ background: var(--paper); border-style: dashed; }
   .product-card.off .product-name,
   .product-card.off .product-desc{ color: var(--ink-faint); }
+  /* ---- Referrals ---- */
+  .referral-code{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border:1px solid var(--gold);
+    background: var(--gold-soft);
+    border-radius: 10px;
+    padding: 13px 14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 17px;
+    letter-spacing: 0.06em;
+    color: var(--gold-ink);
+  }
+  .referral-code .link-btn{ color: var(--gold-ink); font-family:'Inter',sans-serif; font-size:12px; }
+  .referral-lead{
+    display:block; width:100%; text-align:left;
+    border:none; background:transparent; cursor:pointer;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--rule);
+    font-family:'Inter',sans-serif;
+  }
+  .referral-lead:last-child{ border-bottom:none; }
+  .referral-lead-name{
+    display:block;
+    font-family:'Fraunces',Georgia,serif; font-weight:600; font-size:14.5px; color:var(--ink);
+  }
+  .referral-lead-meta{
+    display:block;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); margin-top:2px;
+  }
+
   .product-badge{
     display:inline-block;
     margin-left:8px;
@@ -812,6 +843,7 @@
   </div>
 
   <div class="menu" id="menu" hidden>
+    <button id="menuReferrals">Referrals</button>
     <button id="menuProducts">Products &amp; documents</button>
     <button id="menuSignOut">Sign out</button>
   </div>
@@ -896,6 +928,11 @@
           <div class="form-hint" id="afProductDesc"></div>
         </div>
         <div class="form-field">
+          <label class="form-label" for="afReferredBy">Referred by</label>
+          <div id="afReferredByWrap"></div>
+          <div class="form-hint">Who sent you this lead. Leave blank if nobody did.</div>
+        </div>
+        <div class="form-field">
           <label class="form-label">
             Documents to collect
             <span class="doc-summary" id="afDocSummary"></span>
@@ -925,6 +962,17 @@
         <button class="save-btn" id="afSave" type="submit">Save lead</button>
       </form>
     </div>
+  </div>
+
+  <!-- Referrals -->
+  <div class="sheet" id="referralSheet">
+    <div class="sheet-header">
+      <button class="back-btn" data-close aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#26221C" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="sheet-title">Referrals</div>
+    </div>
+    <div class="sheet-body" id="referralBody"></div>
   </div>
 
   <!-- Products -->
@@ -1119,6 +1167,7 @@
     query: '',
     activeLeadId: null,
     openProduct: null,
+    openReferrer: null,
     addingProduct: false
   };
 
@@ -1347,6 +1396,40 @@
     );
   }
 
+  /**
+   * Who her leads came from. Existing referrers first, then her own leads —
+   * a referral usually comes from someone already in the book, so offering
+   * those names saves typing and keeps spellings consistent, which is what
+   * makes the Referrals screen able to group them at all.
+   */
+  function referrerOptions() {
+    var out = [];
+    state.leads.forEach(function (l) {
+      if (l.ReferredBy && out.indexOf(l.ReferredBy) === -1) out.push(l.ReferredBy);
+    });
+    out.sort();
+
+    state.leads.map(function (l) { return l.Name; }).sort().forEach(function (name) {
+      if (name && out.indexOf(name) === -1) out.push(name);
+    });
+    return out;
+  }
+
+  /** Referrers who actually sent someone, with their leads, busiest first. */
+  function referralGroups() {
+    var byName = {};
+    state.leads.forEach(function (l) {
+      if (!l.ReferredBy) return;
+      (byName[l.ReferredBy] = byName[l.ReferredBy] || []).push(l);
+    });
+
+    return Object.keys(byName).map(function (name) {
+      return { name: name, leads: byName[name] };
+    }).sort(function (a, b) {
+      return b.leads.length - a.leads.length || a.name.localeCompare(b.name);
+    });
+  }
+
   function areasIn(city) {
     var pool = city === 'all'
       ? state.leads
@@ -1558,16 +1641,32 @@
     $('docSummary').textContent = docs.length ? shared + '/' + docs.length + ' shared' : '';
   }
 
+  /** Meeting, Call, WhatsApp, Email — how the follow-up happened, not a channel
+   *  the app talks through. LeadBook sends nothing; it only records. */
+  var FOLLOW_UP_TYPES = ['Meeting', 'Call', 'WhatsApp', 'Email'];
+  var followUpType = FOLLOW_UP_TYPES[0];
+
+  function renderTypeChips() {
+    $('fuTypes').innerHTML = FOLLOW_UP_TYPES.map(function (t) {
+      return '<button type="button" class="product-chip' +
+        (t === followUpType ? ' active' : '') + '" data-fu-type="' + esc(t) + '">' +
+        esc(t) + '</button>';
+    }).join('');
+  }
+
   function renderHistory(leadId) {
     var entries = followUpsFor(leadId);
     $('historyList').innerHTML = entries.length
       ? entries.map(function (f, i) {
+          var bits = [esc(fmtDate(f.Date))];
+          if (f.Type) bits.push(esc(f.Type));
+          if (i === 0) bits.push('latest');
           return '<div class="history-entry' + (i === 0 ? ' latest' : '') + '">' +
-            '<div class="history-date">' + esc(fmtDate(f.Date)) + (i === 0 ? ' · latest' : '') + '</div>' +
+            '<div class="history-date">' + bits.join(' · ') + '</div>' +
             '<div class="history-note">' + esc(f.Note) + '</div>' +
           '</div>';
         }).join('')
-      : '<div class="history-empty">No meetings logged yet.</div>';
+      : '<div class="history-empty">Nothing logged yet.</div>';
   }
 
   /**
@@ -1596,6 +1695,13 @@
             esc([lead.Address, lead.Area, lead.City].filter(Boolean).join(', ') || '—') +
           '</div>' +
         '</div>' +
+
+        (lead.ReferredBy
+          ? '<div class="detail-field">' +
+              '<div class="detail-label"><span>Referred by</span></div>' +
+              '<div class="detail-value">' + esc(lead.ReferredBy) + '</div>' +
+            '</div>'
+          : '') +
 
         '<div class="form-row2">' +
           '<div class="detail-field">' +
@@ -1638,6 +1744,11 @@
           'changing the product here will not add or remove any.</div>' +
       '</div>' +
       '<div class="form-field">' +
+        '<label class="form-label">Referred by</label>' +
+        pickerHtml('edReferredBy', referrerOptions(), lead.ReferredBy || '',
+                   '+ Someone not listed', 'Who referred them') +
+      '</div>' +
+      '<div class="form-field">' +
         '<label class="form-label" for="edAddress">Address</label>' +
         '<input class="form-input" id="edAddress" value="' + esc(lead.Address || '') +
           '" placeholder="House / street">' +
@@ -1672,6 +1783,7 @@
         '<button class="save-followup-btn" id="edSave" type="button" style="margin-top:0;">Save details</button>' +
       '</div>';
 
+    wirePicker('edReferredBy');
     wirePicker('edCity', function () {
       // Re-offer the areas that belong to whichever city is now selected.
       var wrap = $('edArea').parentNode;
@@ -1707,15 +1819,19 @@
 
       '<div class="detail-field">' +
         '<div class="detail-label"><span>Follow-up history</span></div>' +
-        '<button class="add-followup-btn" id="addFollowupBtn">+ &nbsp;Log a meeting</button>' +
+        '<button class="add-followup-btn" id="addFollowupBtn">+ &nbsp;Log a follow-up</button>' +
         '<div class="followup-form" id="followupForm" hidden>' +
           '<div class="form-field">' +
-            '<label class="form-label" for="fuDate">Meeting date</label>' +
+            '<label class="form-label">How did you follow up?</label>' +
+            '<div class="chip-row type-row" id="fuTypes"></div>' +
+          '</div>' +
+          '<div class="form-field">' +
+            '<label class="form-label" for="fuDate">Date</label>' +
             '<input class="form-input" type="date" id="fuDate">' +
           '</div>' +
           '<div class="form-field">' +
             '<label class="form-label" for="fuNote">What happened</label>' +
-            '<textarea class="form-textarea" id="fuNote" placeholder="Notes from this meeting…"></textarea>' +
+            '<textarea class="form-textarea" id="fuNote" placeholder="Notes from this follow-up…"></textarea>' +
           '</div>' +
           '<div class="form-row2">' +
             '<div class="form-field">' +
@@ -1735,6 +1851,8 @@
     renderLeadBlock(lead, false);
     renderDocList(leadId);
     renderHistory(leadId);
+    followUpType = FOLLOW_UP_TYPES[0];
+    renderTypeChips();
     $('fuDate').value = todayIso();
     wireDetail(leadId);
 
@@ -1749,6 +1867,13 @@
     });
 
     $('saveFollowupBtn').addEventListener('click', function () { saveFollowUp(leadId, this); });
+
+    $('fuTypes').addEventListener('click', function (e) {
+      var chip = e.target.closest('[data-fu-type]');
+      if (!chip) return;
+      followUpType = chip.dataset.fuType;
+      renderTypeChips();
+    });
     $('addDocBtn').addEventListener('click', function () { addDocument(leadId, this); });
 
     $('newDocName').addEventListener('keydown', function (e) {
@@ -1912,6 +2037,109 @@
 
 
   /* ============================================================
+   * Render — referrals
+   *
+   * Two things share this screen because they are the same idea
+   * pointing in opposite directions: leads other people sent her,
+   * and the code she gives out to send agents to ai4work.
+   * ============================================================ */
+  function renderReferrals() {
+    var groups = referralGroups();
+    var referred = groups.reduce(function (n, g) { return n + g.leads.length; }, 0);
+    var code = CONFIG.referralCode || '';
+
+    var html = '';
+
+    if (code) {
+      html +=
+        '<div class="detail-field">' +
+          '<div class="detail-label"><span>Your referral code</span></div>' +
+          '<div class="referral-code">' +
+            '<span id="referralCode">' + esc(code) + '</span>' +
+            '<button class="link-btn" id="copyCodeBtn" type="button">Copy</button>' +
+          '</div>' +
+          '<div class="form-hint">Share this with other agents. You earn cashback for ' +
+            'every one who signs up and pays in full — it comes off your own instalments.</div>' +
+        '</div>';
+    }
+
+    html +=
+      '<div class="detail-field">' +
+        '<div class="detail-label">' +
+          '<span>Who sends you leads</span>' +
+          '<span class="doc-summary">' + referred + ' of ' + plural(state.leads.length, 'lead') + '</span>' +
+        '</div>';
+
+    if (!groups.length) {
+      html += '<div class="empty">No referrals recorded yet.<br>' +
+        'Fill in “Referred by” when you add a lead and they will show up here.</div>';
+    } else {
+      html += groups.map(function (g) {
+        var open = state.openReferrer === g.name;
+        return '<div class="product-card">' +
+          '<button class="product-head" data-referrer="' + esc(g.name) + '">' +
+            '<span>' +
+              '<span class="product-name">' + esc(g.name) + '</span>' +
+              '<span class="product-meta">' + plural(g.leads.length, 'lead') + '</span>' +
+            '</span>' +
+            '<span class="product-chevron">' +
+              '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+              '<path d="M' + (open ? '18 15l-6-6-6 6' : '9 18l6-6-6-6') + '"/></svg>' +
+            '</span>' +
+          '</button>' +
+          (open
+            ? '<div class="product-edit">' +
+                g.leads.map(function (l) {
+                  return '<button class="referral-lead" data-lead="' + esc(l.LeadID) + '">' +
+                    '<span class="referral-lead-name">' + esc(l.Name) + '</span>' +
+                    '<span class="referral-lead-meta">' + esc(l.Product) +
+                      ' · ' + esc(dueLabel(l.NextVisitDate)) + '</span>' +
+                  '</button>';
+                }).join('') +
+              '</div>'
+            : '') +
+        '</div>';
+      }).join('');
+    }
+
+    html += '</div>';
+    $('referralBody').innerHTML = html;
+    wireReferrals();
+  }
+
+  function wireReferrals() {
+    $('referralBody').querySelectorAll('[data-referrer]').forEach(function (head) {
+      head.addEventListener('click', function () {
+        var name = head.dataset.referrer;
+        state.openReferrer = state.openReferrer === name ? null : name;
+        renderReferrals();
+      });
+    });
+
+    $('referralBody').querySelectorAll('[data-lead]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        $('referralSheet').classList.remove('open');
+        openDetail(btn.dataset.lead);
+      });
+    });
+
+    var copy = $('copyCodeBtn');
+    if (copy) {
+      copy.addEventListener('click', function () {
+        var code = $('referralCode').textContent;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(code)
+            .then(function () { toast('Referral code copied.'); })
+            .catch(function () { toast(code, false); });
+        } else {
+          toast(code, false);   // no clipboard access — show it big enough to read
+        }
+      });
+    }
+  }
+
+
+  /* ============================================================
    * Writes — leads
    * ============================================================ */
   function toggleDocument(docId, leadId) {
@@ -1981,13 +2209,14 @@
     var note = $('fuNote').value.trim();
     var date = $('fuDate').value;
 
-    if (!note) { $('fuNote').focus(); toast('Add a note for this meeting.', true); return; }
-    if (!date) { $('fuDate').focus(); toast('Pick the meeting date.', true); return; }
+    if (!note) { $('fuNote').focus(); toast('Add a note for this follow-up.', true); return; }
+    if (!date) { $('fuDate').focus(); toast('Pick the date.', true); return; }
 
     busy(button, 'Saving…');
     api.post('addFollowUp', {
       LeadID: leadId,
       Date: date,
+      Type: followUpType,
       Note: note,
       NextVisitDate: $('fuNextVisit').value,
       NextStep: $('fuNextStep').value.trim()
@@ -2027,6 +2256,7 @@
       Name: name,
       Phone: formatPhone(phone),
       Product: $('edProduct').value,
+      ReferredBy: pickerValue('edReferredBy'),
       Address: $('edAddress').value.trim(),
       City: city,
       Area: pickerValue('edArea'),
@@ -2078,6 +2308,7 @@
       City: city,
       Area: pickerValue('afArea'),
       Product: $('afProduct').value,
+      ReferredBy: pickerValue('afReferredBy'),
       NextVisitDate: $('afVisit').value,
       NextStep: $('afNextStep').value.trim(),
       DocNames: pendingDocs.filter(function (d) { return d.include; })
@@ -2240,6 +2471,10 @@
       : '<option value="">Add a product first</option>';
 
     $('afPhoneWrap').innerHTML = phoneFieldHtml('afPhone', '');
+
+    $('afReferredByWrap').innerHTML =
+      pickerHtml('afReferredBy', referrerOptions(), '', '+ Someone not listed', 'Who referred them');
+    wirePicker('afReferredBy');
 
     $('afCityWrap').innerHTML =
       pickerHtml('afCity', cityOptions(), '', '+ Add a new city', 'New city name');
@@ -2499,6 +2734,13 @@
 
   document.addEventListener('click', function (e) {
     if (!$('menu').hidden && !e.target.closest('#menu')) $('menu').hidden = true;
+  });
+
+  $('menuReferrals').addEventListener('click', function () {
+    $('menu').hidden = true;
+    state.openReferrer = null;
+    renderReferrals();
+    $('referralSheet').classList.add('open');
   });
 
   $('menuProducts').addEventListener('click', function () {

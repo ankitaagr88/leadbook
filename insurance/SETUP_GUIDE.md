@@ -315,7 +315,8 @@ Do this on your phone, not your computer.
 - [ ] Untick one document before saving. Only the ticked ones appear on the lead
 - [ ] Tick a document as shared. Close the app, open it again — still ticked
 - [ ] Tap the pencil at the top of a lead and change something. It saves
-- [ ] Log a follow-up with a next visit date. It shows in the history
+- [ ] Log a follow-up, pick Call or WhatsApp as the type. It shows in the history
+- [ ] Set "Referred by" on a lead, then Menu → Referrals — she appears there
 - [ ] Tap her phone number on a lead. The dialer opens
 - [ ] Delete the fake lead's row from the Leads tab in the Sheet when you're done
 

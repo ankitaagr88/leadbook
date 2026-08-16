@@ -27,7 +27,8 @@ var DATETIME_FIELDS = ['LoggedAt', 'UpdatedAt'];
 
 /** Lead fields the app is allowed to overwrite after creation. */
 var EDITABLE_LEAD_FIELDS = [
-  'Name', 'Phone', 'Address', 'City', 'Area', 'Product', 'NextVisitDate', 'NextStep'
+  'Name', 'Phone', 'Address', 'City', 'Area', 'Product', 'ReferredBy',
+  'NextVisitDate', 'NextStep'
 ];
 
 
@@ -235,6 +236,7 @@ function addLead_(p) {
     City: text_(p.City),
     Area: text_(p.Area),
     Product: text_(p.Product),
+    ReferredBy: text_(p.ReferredBy),
     NextVisitDate: date_(p.NextVisitDate),
     NextStep: text_(p.NextStep),
     CreatedDate: todayIso_(),
@@ -291,6 +293,7 @@ function addFollowUp_(p) {
     FollowUpID: nextId_(TAB.FOLLOW_UPS, 'FollowUpID', 'FU-'),
     LeadID: lead.LeadID,
     Date: date_(p.Date),
+    Type: followUpType_(p.Type),
     Note: text_(p.Note),
     LoggedAt: nowIso_()
   };
@@ -678,6 +681,24 @@ function unique_(list) {
 
 function text_(v) {
   return v === undefined || v === null ? '' : String(v).trim();
+}
+
+
+/**
+ * How the follow-up happened. Recognised values are normalised to their proper
+ * casing so the Sheet stays groupable; anything unrecognised is kept as typed
+ * rather than thrown away, in case the agent edits the Sheet directly.
+ */
+var FOLLOW_UP_TYPES = ['Meeting', 'Call', 'WhatsApp', 'Email'];
+
+function followUpType_(v) {
+  var given = text_(v);
+  if (!given) return FOLLOW_UP_TYPES[0];
+
+  for (var i = 0; i < FOLLOW_UP_TYPES.length; i++) {
+    if (FOLLOW_UP_TYPES[i].toLowerCase() === given.toLowerCase()) return FOLLOW_UP_TYPES[i];
+  }
+  return given;
 }
 
 
