@@ -565,6 +565,25 @@
   .form-row2 > button{ flex:1; min-width:0; }
   .form-hint{ font-size:11px; color:var(--ink-faint); margin-top:5px; line-height:1.45; }
   .picker-new{ margin-top:7px; }
+
+  /* Phone fields carry the country code as furniture, so she types 10 digits. */
+  .phone-field{ display:flex; align-items:stretch; }
+  .phone-prefix{
+    display:flex; align-items:center;
+    padding: 0 11px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .phone-field .form-input{
+    border-radius: 0 10px 10px 0;
+    min-width: 0;
+  }
   .save-btn{
     width:100%;
     background: var(--teal);
@@ -855,7 +874,7 @@
         </div>
         <div class="form-field">
           <label class="form-label" for="afPhone">Phone number <span class="req">*</span></label>
-          <input class="form-input" id="afPhone" type="tel" placeholder="+91 98XXX XXXXX" autocomplete="tel">
+          <div id="afPhoneWrap"></div>
         </div>
         <div class="form-field">
           <label class="form-label" for="afAddress">Address</label>
@@ -930,8 +949,11 @@
 
       <div class="form-field">
         <label class="form-label" for="gatePhone">Mobile number</label>
-        <input class="form-input" id="gatePhone" type="tel" inputmode="tel"
-               placeholder="98XXX XXXXX" autocomplete="tel">
+        <div class="phone-field">
+          <span class="phone-prefix" id="gatePrefix">+91</span>
+          <input class="form-input" id="gatePhone" type="tel" inputmode="numeric"
+                 placeholder="98765 43210" autocomplete="tel">
+        </div>
       </div>
       <div class="form-field">
         <label class="form-label" for="gateEmail">Email address</label>
@@ -1207,6 +1229,47 @@
   function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
 
 
+  /* ---- Phone numbers -------------------------------------------------
+   * India by default, so she types 10 digits and never the country code.
+   * Everything is reduced to those 10 digits before it is compared, stored
+   * or dialled — that way `+91 98250 11234`, `09825011234` and
+   * `9825011234` pasted from anywhere all end up the same.
+   * -------------------------------------------------------------------- */
+  function countryCode() {
+    return (CONFIG && CONFIG.countryCode) || '+91';
+  }
+
+  /** The 10 significant digits, whatever was typed or pasted around them. */
+  function localPhone(raw) {
+    var d = digits(raw);
+    return d.length > 10 ? d.slice(-10) : d;
+  }
+
+  /** How it goes into the Sheet and onto the screen: `+91 98250 11234`. */
+  function formatPhone(raw) {
+    var d = localPhone(raw);
+    if (d.length !== 10) return String(raw || '');
+    return countryCode() + ' ' + d.slice(0, 5) + ' ' + d.slice(5);
+  }
+
+  /** What the dialler gets. Country code included so it works from anywhere. */
+  function telHref(raw) {
+    var d = localPhone(raw);
+    return d.length === 10 ? countryCode() + d : digits(raw);
+  }
+
+  /** A 10-digit box with the country code fixed alongside it. */
+  function phoneFieldHtml(id, value) {
+    var d = localPhone(value);
+    var shown = d.length === 10 ? d.slice(0, 5) + ' ' + d.slice(5) : d;
+    return '<div class="phone-field">' +
+      '<span class="phone-prefix">' + esc(countryCode()) + '</span>' +
+      '<input class="form-input" id="' + esc(id) + '" type="tel" inputmode="numeric" ' +
+        'autocomplete="tel" placeholder="98765 43210" value="' + esc(shown) + '">' +
+    '</div>';
+  }
+
+
   /* ============================================================
    * Derived data
    * ============================================================ */
@@ -1305,7 +1368,9 @@
       if (state.product !== 'all' && l.Product !== state.product) return false;
       if (!q) return true;
       var nameHit = String(l.Name).toLowerCase().indexOf(q) !== -1;
-      var phoneHit = qDigits.length > 0 && digits(l.Phone).indexOf(qDigits) !== -1;
+      // Match against the 10 significant digits, so typing "91" doesn't hit
+      // every lead just because of the country code.
+      var phoneHit = qDigits.length > 0 && localPhone(l.Phone).indexOf(localPhone(qDigits)) !== -1;
       return nameHit || phoneHit;
     }).sort(function (a, b) {
       // Soonest visit first; leads with no date sink to the bottom.
@@ -1522,13 +1587,25 @@
           : '') +
         '<div class="detail-field first">' +
           '<div class="detail-label"><span>Phone</span></div>' +
-          '<a class="detail-value mono" href="tel:' + esc(digits(lead.Phone)) + '">' +
-            esc(lead.Phone) + '</a>' +
+          '<a class="detail-value mono" href="tel:' + esc(telHref(lead.Phone)) + '">' +
+            esc(formatPhone(lead.Phone)) + '</a>' +
         '</div>' +
         '<div class="detail-field">' +
           '<div class="detail-label"><span>Address</span></div>' +
           '<div class="detail-value">' +
             esc([lead.Address, lead.Area, lead.City].filter(Boolean).join(', ') || '—') +
+          '</div>' +
+        '</div>' +
+
+        '<div class="form-row2">' +
+          '<div class="detail-field">' +
+            '<div class="detail-label"><span>Next visit</span></div>' +
+            '<div class="detail-value mono ' + dueClass(lead.NextVisitDate) + '">' +
+              esc(dueLabel(lead.NextVisitDate)) + '</div>' +
+          '</div>' +
+          '<div class="detail-field">' +
+            '<div class="detail-label"><span>Next step</span></div>' +
+            '<div class="detail-value">' + esc(lead.NextStep || 'Not set') + '</div>' +
           '</div>' +
         '</div>';
       return;
@@ -1547,7 +1624,7 @@
       '</div>' +
       '<div class="form-field">' +
         '<label class="form-label" for="edPhone">Phone number <span class="req">*</span></label>' +
-        '<input class="form-input" id="edPhone" type="tel" value="' + esc(lead.Phone) + '">' +
+        phoneFieldHtml('edPhone', lead.Phone) +
       '</div>' +
       '<div class="form-field">' +
         '<label class="form-label" for="edProduct">Product pitched</label>' +
@@ -1575,6 +1652,21 @@
           pickerHtml('edArea', areasIn(lead.City), lead.Area, '+ Add a new area', 'New area name') +
         '</div>' +
       '</div>' +
+      // Set the next visit without having to log a meeting for it — she often
+      // reschedules from a phone call, not a visit.
+      '<div class="form-row2">' +
+        '<div class="form-field">' +
+          '<label class="form-label" for="edVisit">Next visit date</label>' +
+          '<input class="form-input" id="edVisit" type="date" value="' +
+            esc(lead.NextVisitDate || '') + '">' +
+        '</div>' +
+        '<div class="form-field">' +
+          '<label class="form-label" for="edNextStep">Next step</label>' +
+          '<input class="form-input" id="edNextStep" value="' + esc(lead.NextStep || '') +
+            '" placeholder="e.g. Call back with quote">' +
+        '</div>' +
+      '</div>' +
+
       '<div class="form-row2">' +
         '<button class="ghost-btn" id="edCancel" type="button">Cancel</button>' +
         '<button class="save-followup-btn" id="edSave" type="button" style="margin-top:0;">Save details</button>' +
@@ -1601,18 +1693,6 @@
     $('detailName').textContent = lead.Name;
     $('detailBody').innerHTML =
       '<div id="leadBlock"></div>' +
-
-      '<div class="form-row2">' +
-        '<div class="detail-field">' +
-          '<div class="detail-label"><span>Next visit</span></div>' +
-          '<div class="detail-value mono ' + dueClass(lead.NextVisitDate) + '">' +
-            esc(dueLabel(lead.NextVisitDate)) + '</div>' +
-        '</div>' +
-        '<div class="detail-field">' +
-          '<div class="detail-label"><span>Next step</span></div>' +
-          '<div class="detail-value">' + esc(lead.NextStep || 'Not set') + '</div>' +
-        '</div>' +
-      '</div>' +
 
       '<div class="detail-field">' +
         '<div class="detail-label">' +
@@ -1927,15 +2007,16 @@
 
   function saveDetails(lead, button) {
     var name = $('edName').value.trim();
-    var phone = $('edPhone').value.trim();
+    var phone = localPhone($('edPhone').value);
     var city = pickerValue('edCity');
 
     $('edName').classList.toggle('invalid', !name);
-    $('edPhone').classList.toggle('invalid', !phone);
+    $('edPhone').classList.toggle('invalid', phone.length !== 10);
 
-    if (!name || !phone) {
-      (name ? $('edPhone') : $('edName')).focus();
-      toast('Name and phone are both needed.', true);
+    if (!name) { $('edName').focus(); toast('A name is needed.', true); return; }
+    if (phone.length !== 10) {
+      $('edPhone').focus();
+      toast('Enter the 10-digit mobile number.', true);
       return;
     }
     if (!city) { toast('Pick or add a city.', true); return; }
@@ -1944,11 +2025,13 @@
     api.post('updateLead', {
       LeadID: lead.LeadID,
       Name: name,
-      Phone: phone,
+      Phone: formatPhone(phone),
       Product: $('edProduct').value,
       Address: $('edAddress').value.trim(),
       City: city,
-      Area: pickerValue('edArea')
+      Area: pickerValue('edArea'),
+      NextVisitDate: $('edVisit').value,
+      NextStep: $('edNextStep').value.trim()
     })
       .then(function (data) {
         Object.assign(lead, data.lead);
@@ -1965,7 +2048,8 @@
 
   function saveLead(button) {
     var city = pickerValue('afCity');
-    var checks = { Name: $('afName'), Phone: $('afPhone'), Product: $('afProduct') };
+    var phone = localPhone($('afPhone').value);
+    var checks = { Name: $('afName'), Product: $('afProduct') };
 
     var missing = Object.keys(checks).filter(function (key) {
       var empty = !checks[key].value.trim();
@@ -1973,17 +2057,23 @@
       return empty;
     });
     $('afCity').classList.toggle('invalid', !city);
+    $('afPhone').classList.toggle('invalid', phone.length !== 10);
 
     if (missing.length || !city) {
       (missing.length ? checks[missing[0]] : $('afCity')).focus();
       toast('Name, phone, city and product are all needed.', true);
       return;
     }
+    if (phone.length !== 10) {
+      $('afPhone').focus();
+      toast('Enter the 10-digit mobile number.', true);
+      return;
+    }
 
     busy(button, 'Saving…');
     api.post('addLead', {
       Name: $('afName').value.trim(),
-      Phone: $('afPhone').value.trim(),
+      Phone: formatPhone(phone),
       Address: $('afAddress').value.trim(),
       City: city,
       Area: pickerValue('afArea'),
@@ -2149,6 +2239,8 @@
         }).join('')
       : '<option value="">Add a product first</option>';
 
+    $('afPhoneWrap').innerHTML = phoneFieldHtml('afPhone', '');
+
     $('afCityWrap').innerHTML =
       pickerHtml('afCity', cityOptions(), '', '+ Add a new city', 'New city name');
     wirePicker('afCity', renderAreaPicker);
@@ -2266,9 +2358,11 @@
     device.dataset.state = 'login';
     $('pageSub').textContent = '';
 
+    $('gatePrefix').textContent = countryCode();
+
     var stored = session.load();
     if (stored) {
-      $('gatePhone').value = stored.phone || '';
+      $('gatePhone').value = localPhone(stored.phone);
       $('gateEmail').value = stored.email || '';
     }
 
@@ -2283,10 +2377,10 @@
   }
 
   function signIn(button) {
-    var phone = $('gatePhone').value.trim();
+    var phone = localPhone($('gatePhone').value);
     var email = $('gateEmail').value.trim();
 
-    if (digits(phone).length < 10) {
+    if (phone.length !== 10) {
       $('gatePhone').focus();
       return showGateError('Enter your 10-digit mobile number.');
     }

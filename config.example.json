@@ -4,6 +4,7 @@
   "agentPhone": "",
   "referralCode": "",
   "appsScriptUrl": "PASTE THE /exec URL FROM HER OWN WEB APP DEPLOYMENT HERE",
+  "countryCode": "+91",
   "defaultCityOrder": [],
 
   "_howToUse": "Copy this file, do not edit it in place. Serving one agent: name the copy config.json. Serving several from one deployment: name each copy config-<agentSlug>.json and reach it at leadbook-<slug>.yourdomain or ?agent=<slug>.",
@@ -13,6 +14,7 @@
     "agentPhone": "for your records. She signs in with the phone on her Config tab, not this one",
     "referralCode": "initials + year, e.g. AB2026",
     "appsScriptUrl": "the /exec URL from her Web App deployment",
+    "countryCode": "shown fixed beside every phone box, so she types 10 digits only. Defaults to +91 if omitted",
     "defaultCityOrder": "optional. Seeds the city picker on day one only; after that the filters come from her own leads. Leave empty if unsure"
   },
   "_notInThisFile": "The access code. It lives only on her Sheet's Config tab and is issued by the server after she signs in, so it never ships to a public host."
