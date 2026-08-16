@@ -4,17 +4,28 @@
 # un-ignored below. That way a new planning doc dropped into this folder is
 # excluded automatically, instead of relying on someone remembering to add it.
 #
-# Never un-ignore: TIME_EFFORT.md (rates, margins), OPEN_QUESTIONS.md and
-# DOU.md (payment structure), the proposal .docx, or anything with a client's
-# details in it.
+# Never un-ignore: TIME_EFFORT.md (rates, margins), OPEN_QUESTIONS.md,
+# insurance/DOU.md and the proposal .docx (payment structure), or anything with
+# a client's details in it.
+#
+# Adding a vertical? Add its two lines to the per-vertical block below.
 
 *
 
+# --- core (industry-agnostic) ---
 !.gitignore
 !CNAME
 !README.md
 !index.html
 !config.example.json
-!config.json
 !apps-script/
 !apps-script/*.gs
+
+# --- verticals: config + redirect stubs + seed data only ---
+# Deliberately NOT `!insurance/*` — that would publish DOU.md and the proposal.
+!insurance/
+!insurance/README.md
+!insurance/Seed.gs
+!insurance/config-*.json
+!insurance/*/
+!insurance/*/index.html

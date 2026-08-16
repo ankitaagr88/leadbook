@@ -1,9 +1,14 @@
 # LeadBook
 
-A personal lead-management web app for an individual insurance agent. Each agent
+A personal lead-management web app for an individual field agent. Each agent
 gets her own isolated instance — her own Google Sheet, her own Apps Script
 deployment, her own config file. There is no shared database and no server to
 pay for.
+
+The core is **industry-agnostic**. "Products" and the documents each one needs
+are entirely agent-configured, so the same app serves any vertical where someone
+visits leads, collects paperwork and books a next visit. Insurance is the first;
+each vertical is a folder.
 
 ## What it does
 
@@ -19,29 +24,55 @@ pay for.
 
 ## How it fits together
 
+**Core — knows nothing about any industry:**
+
 | Piece | What it is |
 |---|---|
-| `index.html` | The entire frontend. Static, agent-agnostic, hosted on GitHub Pages |
-| `config.json` / `config-[slug].json` | One per agent. Her name and her Web App URL |
-| `config.example.json` | The template to copy |
+| `index.html` | The entire frontend. Static, agent-agnostic, industry-agnostic |
+| `config.example.json` | The per-agent template to copy |
 | `apps-script/Code.gs` | The API — `doGet` / `doPost`, bound to one agent's Sheet |
-| `apps-script/Setup.gs` | Run once to build the Sheet's six tabs and seed defaults |
+| `apps-script/Setup.gs` | Run once to build the Sheet's six tabs |
+
+**Per vertical — one folder each:**
+
+| Piece | What it is |
+|---|---|
+| `[industry]/Seed.gs` | Starter products and their document lists. The only industry-specific code |
+| `[industry]/config-[slug].json` | One per agent |
+| `[industry]/[slug]/index.html` | Redirect stub giving her a tidy URL |
 
 The Sheet is the database: `Config`, `Products`, `DocTemplates`, `Leads`,
 `FollowUps`, `Documents`.
+
+## URLs
+
+```
+leadbook.ai4work.in/insurance/vaishali/   ->  insurance/config-vaishali.json
+leadbook.ai4work.in/?industry=x&agent=y   ->  x/config-y.json
+```
+
+A URL that names an instance outright must have its config file — the app errors
+rather than falling back, since falling back would sign someone into a different
+agent's LeadBook.
 
 ## Setting up an agent
 
 1. **Sheet** — copy the master template Sheet, or run `setupMasterTemplate()`
    from `Setup.gs` against a blank one. Fill in the `Config` tab: her name, her
    mobile, her email. Those last two are how she signs in
-2. **Backend** — in that Sheet, Extensions → Apps Script → paste both `.gs`
-   files → Deploy → New deployment → **Web app**, *Execute as: Me*,
-   *Who has access: **Anyone***. Copy the `/exec` URL
-3. **Frontend** — copy `config.example.json` to `config.json` (one agent) or
-   `config-[slug].json` (several agents on one deployment), and paste in the
-   `/exec` URL
+2. **Backend** — in that Sheet, Extensions → Apps Script → paste `Code.gs`,
+   `Setup.gs` and the vertical's `Seed.gs` → Deploy → New deployment →
+   **Web app**, *Execute as: Me*, *Who has access: **Anyone***. Copy the `/exec` URL
+3. **Frontend** — copy `config.example.json` to `[industry]/config-[slug].json`,
+   paste in the `/exec` URL, and add `[industry]/[slug]/index.html` (copy an
+   existing stub, change the slug)
 4. **Publish** — commit, and enable GitHub Pages on the repo root
+
+## Adding a vertical
+
+Copy an existing vertical's folder shape, change `SEED_PRODUCTS` in its
+`Seed.gs`, and add its whitelist lines to `.gitignore`. Nothing in `index.html`,
+`Code.gs` or `Setup.gs` changes.
 
 Re-deploy the Web App as a **new version** after any change to the `.gs` files,
 or nothing you changed goes live.

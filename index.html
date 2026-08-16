@@ -877,9 +877,16 @@
           <div class="form-hint" id="afProductDesc"></div>
         </div>
         <div class="form-field">
-          <label class="form-label">Documents to collect</label>
-          <div class="doc-preview" id="afDocPreview"></div>
-          <div class="form-hint">Taken from this product's document list. You can add or remove documents on the lead afterwards.</div>
+          <label class="form-label">
+            Documents to collect
+            <span class="doc-summary" id="afDocSummary"></span>
+          </label>
+          <div class="doc-list" id="afDocList"></div>
+          <div class="doc-add">
+            <input class="form-input" id="afNewDoc" placeholder="Add another document">
+            <button type="button" id="afAddDoc">Add</button>
+          </div>
+          <div class="form-hint">Starts from this product's document list. Untick anything she won't need — only the ticked ones go onto her checklist.</div>
         </div>
         <div class="form-row2">
           <div class="form-field">
@@ -953,40 +960,75 @@
   'use strict';
 
   /* ============================================================
-   * Which agent is this?
+   * Whose LeadBook is this?
    *
-   * Nothing in this file names an agent, and there is no default
-   * agent. A deployment serves either one agent (config.json) or
-   * many (config-<slug>.json). Onboarding someone is a new config
-   * file and nothing else — see CLAUDE.md.
+   * This file names no agent and no industry, and has no default of
+   * either. Both are config, resolved from the URL:
+   *
+   *   /insurance/vaishali/  ->  insurance/config-vaishali.json
+   *   /?industry=x&agent=y  ->  x/config-y.json
+   *   /?agent=y             ->  config-y.json
+   *
+   * The app itself is industry-agnostic — nothing here knows what an
+   * insurance product is. Adding a vertical is a config folder, not a
+   * second copy of this file. See CLAUDE.md.
    * ============================================================ */
-  function resolveAgent() {
-    var fromQuery = new URLSearchParams(location.search).get('agent');
-    if (fromQuery) return { slug: fromQuery.toLowerCase(), explicit: true };
+  function resolveTarget() {
+    var query = new URLSearchParams(location.search);
+    var agent = query.get('agent');
+    if (agent) {
+      return {
+        industry: (query.get('industry') || '').toLowerCase(),
+        slug: agent.toLowerCase(),
+        explicit: true
+      };
+    }
 
-    var fromSubdomain = location.hostname.match(/^leadbook-([a-z0-9-]+)\./i);
-    if (fromSubdomain) return { slug: fromSubdomain[1].toLowerCase(), explicit: true };
+    // Path segments are a guess, not a statement — in `/leadbook/` that segment
+    // is the repo name — so they may fall through to config.json.
+    var segments = location.pathname.split('/').filter(Boolean)
+      .filter(function (s) { return !/\.html?$/i.test(s); })
+      .map(function (s) { return s.toLowerCase(); });
 
-    // A path segment is a guess, not a statement — in `/leadbook/` that segment
-    // is the repo name — so it is allowed to fall through to config.json.
-    var segments = location.pathname.split('/').filter(Boolean);
-    var last = segments[segments.length - 1] || '';
-    if (last && !/\.html?$/i.test(last)) return { slug: last.toLowerCase(), explicit: false };
-
-    return { slug: '', explicit: false };
+    if (segments.length >= 2) {
+      return {
+        industry: segments[segments.length - 2],
+        slug: segments[segments.length - 1],
+        explicit: false
+      };
+    }
+    if (segments.length === 1) {
+      return { industry: '', slug: segments[0], explicit: false };
+    }
+    return { industry: '', slug: '', explicit: false };
   }
 
-  var AGENT = resolveAgent();
-  var STORE_KEY = 'leadbook';   // narrowed to this agent once the config loads
+  var TARGET = resolveTarget();
+  var STORE_KEY = 'leadbook';   // narrowed to this instance once the config loads
 
   /**
-   * An explicitly named agent must have her own file — falling back would sign
-   * someone into the wrong LeadBook. A guessed one may fall through.
+   * An explicitly named instance must have its own file. Falling back would
+   * sign someone into a different agent's LeadBook — or, now, into the same
+   * name in a different industry. A guessed one may fall through.
    */
+  function configCandidates() {
+    if (TARGET.explicit) {
+      return [TARGET.industry
+        ? TARGET.industry + '/config-' + TARGET.slug + '.json'
+        : 'config-' + TARGET.slug + '.json'];
+    }
+
+    var out = [];
+    if (TARGET.industry && TARGET.slug) {
+      out.push(TARGET.industry + '/config-' + TARGET.slug + '.json');
+    }
+    if (TARGET.slug) out.push('config-' + TARGET.slug + '.json');
+    out.push('config.json');
+    return out;
+  }
+
   function loadConfig() {
-    var candidates = [];
-    if (AGENT.slug) candidates.push('config-' + AGENT.slug + '.json');
-    if (!AGENT.explicit) candidates.push('config.json');
+    var candidates = configCandidates();
 
     return candidates
       .reduce(function (chain, file) {
@@ -1688,7 +1730,7 @@
           '</div>' +
           '<div class="form-field">' +
             '<label class="form-label" for="npDocs">Documents needed</label>' +
-            '<input class="form-input" id="npDocs" placeholder="PAN Card, Aadhar Card, Photograph">' +
+            '<input class="form-input" id="npDocs" placeholder="Photograph, ID proof, Address proof">' +
             '<div class="form-hint">Separate with commas. Every new lead on this product starts with this checklist.</div>' +
           '</div>' +
           '<div class="form-row2">' +
@@ -1947,7 +1989,9 @@
       Area: pickerValue('afArea'),
       Product: $('afProduct').value,
       NextVisitDate: $('afVisit').value,
-      NextStep: $('afNextStep').value.trim()
+      NextStep: $('afNextStep').value.trim(),
+      DocNames: pendingDocs.filter(function (d) { return d.include; })
+                           .map(function (d) { return d.name; })
     })
       .then(function (data) {
         state.leads.push(data.lead);
@@ -2110,7 +2154,7 @@
     wirePicker('afCity', renderAreaPicker);
 
     renderAreaPicker();
-    renderProductBlurb();
+    onProductChange();
   }
 
   function renderAreaPicker() {
@@ -2119,14 +2163,59 @@
     wirePicker('afArea');
   }
 
-  function renderProductBlurb() {
-    var product = productByName($('afProduct').value);
-    var docs = templatesFor($('afProduct').value);
+  /**
+   * The checklist the new lead will start with. Seeded from the product's
+   * DocTemplates, but she can untick anything this particular lead won't need
+   * and add anything it will — so the template is a starting point, not a rule.
+   */
+  var pendingDocs = [];
 
+  function onProductChange() {
+    var product = productByName($('afProduct').value);
     $('afProductDesc').textContent = product && product.Description ? product.Description : '';
-    $('afDocPreview').innerHTML = docs.length
-      ? docs.map(function (d) { return esc(d.DocName); }).join(' · ')
-      : '<span style="color:var(--ink-faint);">No documents set for this product yet. Add them under Products &amp; documents, or on the lead itself.</span>';
+
+    pendingDocs = templatesFor($('afProduct').value).map(function (t) {
+      return { name: t.DocName, include: true };
+    });
+    renderPendingDocs();
+  }
+
+  function renderPendingDocs() {
+    var included = pendingDocs.filter(function (d) { return d.include; }).length;
+
+    $('afDocList').innerHTML = pendingDocs.map(function (d, i) {
+      return '<div class="doc-row' + (d.include ? ' on' : '') + '">' +
+        '<button class="doc-toggle" type="button" data-pick="' + i + '">' +
+          '<span class="doc-check' + (d.include ? ' on' : '') + '">' + checkSvg() + '</span>' +
+          '<span class="doc-name">' + esc(d.name) + '</span>' +
+          '<span class="doc-status">' + (d.include ? 'Included' : 'Skipped') + '</span>' +
+        '</button>' +
+      '</div>';
+    }).join('');
+
+    $('afDocSummary').textContent = pendingDocs.length
+      ? included + ' of ' + pendingDocs.length + ' ticked'
+      : '';
+  }
+
+  function addPendingDoc() {
+    var input = $('afNewDoc');
+    var name = input.value.trim();
+    if (!name) { input.focus(); return; }
+
+    var clash = pendingDocs.filter(function (d) {
+      return d.name.toLowerCase() === name.toLowerCase();
+    })[0];
+
+    if (clash) {
+      clash.include = true;     // already listed — just tick it rather than duplicate
+      toast('"' + clash.name + '" is already on this list.');
+    } else {
+      pendingDocs.push({ name: name, include: true });
+    }
+
+    input.value = '';
+    renderPendingDocs();
   }
 
 
@@ -2341,7 +2430,21 @@
     signIn($('gateSubmit'));
   });
 
-  $('afProduct').addEventListener('change', renderProductBlurb);
+  $('afProduct').addEventListener('change', onProductChange);
+
+  $('afDocList').addEventListener('click', function (e) {
+    var pick = e.target.closest('[data-pick]');
+    if (!pick) return;
+    var doc = pendingDocs[Number(pick.dataset.pick)];
+    doc.include = !doc.include;
+    renderPendingDocs();
+  });
+
+  $('afAddDoc').addEventListener('click', addPendingDoc);
+  $('afNewDoc').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); addPendingDoc(); }
+  });
+
   $('retryBtn').addEventListener('click', boot);
 
   document.addEventListener('keydown', function (e) {
@@ -2407,6 +2510,13 @@
         if (err && err.auth) {
           session.clear();
           showGate('Your session has expired. Please sign in again.');
+          return;
+        }
+        if (/No config file found/.test(err.message)) {
+          // Someone reached the app without an agent in the URL — a bare link,
+          // or a typo in the slug. Not a connectivity problem, so don't say it is.
+          fail('This link is missing its LeadBook. Please use the link you were sent.',
+               err.message);
           return;
         }
         fail(

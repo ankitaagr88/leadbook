@@ -242,16 +242,21 @@ function addLead_(p) {
   };
   appendRow_(TAB.LEADS, lead);
 
-  // Auto-populate the checklist from DocTemplates. The agent can add or remove
-  // rows afterwards — this is a starting point, not a fixed list.
+  // The caller sends the checklist it actually wants — the agent ticks and
+  // unticks the product's defaults on the add-lead form, and may add her own.
+  // With no list supplied, fall back to the product's full default set.
+  var wanted = Array.isArray(p.DocNames)
+    ? p.DocNames.map(text_).filter(Boolean)
+    : docTemplatesFor_(lead.Product).map(function (t) { return t.DocName; });
+
   var nextDocId = idCounter_(TAB.DOCUMENTS, 'DocID', 'DC-');
   var stamp = nowIso_();
-  var documents = docTemplatesFor_(lead.Product).map(function (t) {
+  var documents = unique_(wanted).map(function (docName) {
     var doc = {
       DocID: nextDocId(),
       LeadID: leadId,
-      DocName: t.DocName,
-      Shared: false,
+      DocName: docName,
+      Shared: false,          // never pre-ticked; only the agent marks a doc shared
       UpdatedAt: stamp
     };
     appendRow_(TAB.DOCUMENTS, doc);

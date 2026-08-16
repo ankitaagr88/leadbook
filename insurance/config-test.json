@@ -1,4 +1,5 @@
 {
+  "industry": "insurance",
   "agentSlug": "test",
   "agentName": "Test Sheet",
   "agentPhone": "",
@@ -6,5 +7,5 @@
   "appsScriptUrl": "https://script.google.com/macros/s/AKfycbwJoliyV_BzqlQQJJosQPQ3cVxvjP-My6DgtMNbiqxOYD3eLk7EHSkxOGpro0oGDg9tzw/exec",
   "defaultCityOrder": [],
 
-  "_this_is": "ai4work's own test Sheet, not a client's. Every agent gets her own Sheet and her own Web App deployment, so no client config ever points here. Do not copy this file when onboarding — copy config.example.json."
+  "_this_is": "ai4work's own test Sheet, not a client's. Every agent gets her own Sheet and her own Web App deployment, so no client config ever points here. Do not copy this file when onboarding — copy /config.example.json."
 }

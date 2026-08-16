@@ -28,36 +28,19 @@ var TEXT_COLUMNS = {
 };
 
 /**
- * Starter products. The agent edits these from the Products screen in the app
- * — this is just so a fresh Sheet isn't empty on day one.
+ * Starter products come from the industry's seed file, not from here.
+ *
+ * Paste one `Seed.gs` alongside this file — `insurance/Seed.gs`, or whichever
+ * vertical this Sheet is for — and it defines `SEED_PRODUCTS`. Apps Script puts
+ * every .gs file in one global scope, so nothing needs importing.
+ *
+ * With no seed file the Sheet is built empty and the agent adds her own
+ * products from the Products screen. That is the whole point: this file knows
+ * nothing about any industry.
  */
-var DEFAULT_PRODUCTS = [
-  {
-    name: 'Term Life',
-    description: 'Pure life cover for a fixed term. High cover, low premium, no maturity payout.',
-    docs: ['PAN Card', 'Aadhar Card', 'Photograph', 'Income Proof', 'Address Proof', 'Cancelled Cheque']
-  },
-  {
-    name: 'Health Cover',
-    description: 'Hospitalisation cover for an individual or family floater. Cashless at network hospitals.',
-    docs: ['PAN Card', 'Aadhar Card', 'Photograph', 'Address Proof', 'Previous Policy Copy', 'Medical Reports']
-  },
-  {
-    name: 'Motor Insurance',
-    description: 'Car and two-wheeler cover. Own-damage plus third-party; renewed yearly.',
-    docs: ['RC Copy', 'Previous Policy Copy', 'Driving Licence', 'Aadhar Card', 'PAN Card', 'Vehicle Photographs']
-  },
-  {
-    name: 'Child Plan',
-    description: 'Savings plan targeted at a child\'s education or marriage milestone.',
-    docs: ['Parent\'s PAN Card', 'Parent\'s Aadhar Card', 'Child\'s Birth Certificate', 'Photograph', 'Income Proof', 'Cancelled Cheque']
-  },
-  {
-    name: 'ULIP',
-    description: 'Insurance plus market-linked investment. Suits longer horizons and tax planning.',
-    docs: ['PAN Card', 'Aadhar Card', 'Photograph', 'Income Proof', 'Bank Statement', 'Cancelled Cheque']
-  }
-];
+function seedProductList_() {
+  return (typeof SEED_PRODUCTS !== 'undefined' && SEED_PRODUCTS) ? SEED_PRODUCTS : [];
+}
 
 
 /**
@@ -136,20 +119,25 @@ function lockTextColumns_(sh, textColumns) {
 function seedProducts_(productsSheet, templatesSheet) {
   if (productsSheet.getLastRow() > 1) return;   // agent may already have edited these
 
-  var productRows = DEFAULT_PRODUCTS.map(function (p, i) {
-    return [p.name, p.description, i + 1, true];
+  var seed = seedProductList_();
+  if (!seed.length) return;                     // no industry seed file — start empty
+
+  var productRows = seed.map(function (p, i) {
+    return [p.name, p.description || '', i + 1, true];
   });
   productsSheet.getRange(2, 1, productRows.length, 4).setValues(productRows);
 
   if (templatesSheet.getLastRow() > 1) return;
 
   var templateRows = [];
-  DEFAULT_PRODUCTS.forEach(function (p) {
-    p.docs.forEach(function (docName, i) {
+  seed.forEach(function (p) {
+    (p.docs || []).forEach(function (docName, i) {
       templateRows.push([p.name, docName, i + 1]);
     });
   });
-  templatesSheet.getRange(2, 1, templateRows.length, 3).setValues(templateRows);
+  if (templateRows.length) {
+    templatesSheet.getRange(2, 1, templateRows.length, 3).setValues(templateRows);
+  }
 }
 
 
