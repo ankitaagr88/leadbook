@@ -1,0 +1,19 @@
+# WHITELIST — this repo is PUBLIC.
+#
+# Everything is ignored by default. A file reaches GitHub only if it is
+# un-ignored below. That way a new planning doc dropped into this folder is
+# excluded automatically, instead of relying on someone remembering to add it.
+#
+# Never un-ignore: TIME_EFFORT.md (rates, margins), OPEN_QUESTIONS.md and
+# DOU.md (payment structure), the proposal .docx, or anything with a client's
+# details in it.
+
+*
+
+!.gitignore
+!README.md
+!index.html
+!config.example.json
+!config.json
+!apps-script/
+!apps-script/*.gs

@@ -1,0 +1,2426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F6F3EC">
+<title>LeadBook — Personal Lead Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #F6F3EC;
+    --paper-raised: #FBF9F4;
+    --ink: #26221C;
+    --ink-soft: #6B6558;
+    --ink-faint: #A39C8C;
+    --rule: #E1DACB;
+    --teal: #2F5C52;
+    --teal-soft: #E4ECE9;
+    --gold: #B4802F;
+    --gold-soft: #F1E3CC;
+    --gold-ink: #8A5F1F;
+    --alert: #A63D2F;
+    --card-shadow: 0 1px 0 rgba(38,34,28,0.04), 0 8px 20px -12px rgba(38,34,28,0.18);
+  }
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  [hidden]{ display:none !important; }
+  body{
+    background: #E9E4D8;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .device{
+    width: 390px;
+    max-width: 100%;
+    background: var(--paper);
+    border-radius: 34px;
+    box-shadow: 0 30px 60px -20px rgba(38,34,28,0.35), 0 0 0 8px #1c1a16;
+    overflow: hidden;
+    position: relative;
+    min-height: 780px;
+    display:flex;
+    flex-direction:column;
+  }
+  /* On a real phone, drop the presentation frame and fill the screen. */
+  @media (max-width: 520px){
+    body{ padding:0; }
+    .device{
+      width:100%;
+      min-height:100vh;
+      min-height:100dvh;
+      height:100dvh;
+      border-radius:0;
+      box-shadow:none;
+    }
+  }
+
+  /* ---- Top bar ---- */
+  .topbar{
+    padding: 20px 20px 14px;
+    padding-top: max(20px, env(safe-area-inset-top));
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-raised);
+  }
+  .topbar-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .brandmark{
+    font-family:'Sora',sans-serif;
+    font-weight:800;
+    font-size:19px;
+    letter-spacing:-0.02em;
+  }
+  .brandmark .b1{color:#141414;}
+  .brandmark .b4{color:#2F5C52;}
+  .topbar-actions{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .agent-chip{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    color: var(--ink-soft);
+    background: var(--teal-soft);
+    padding: 4px 9px;
+    border-radius: 20px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width: 180px;
+  }
+  .icon-btn{
+    width:30px; height:30px;
+    flex-shrink:0;
+    border-radius:8px;
+    border:1px solid var(--rule);
+    background: var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    color: var(--ink-soft);
+  }
+  .menu{
+    position:absolute;
+    top: 56px; right: 20px;
+    background: var(--paper-raised);
+    border:1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
+    z-index: 45;
+    overflow:hidden;
+    min-width: 190px;
+  }
+  .menu button{
+    display:block; width:100%; text-align:left;
+    border:none; background:transparent;
+    padding: 11px 14px;
+    font-family:'Inter',sans-serif; font-size:13.5px; color: var(--ink);
+    cursor:pointer;
+    border-bottom:1px solid var(--rule);
+  }
+  .menu button:last-child{ border-bottom:none; color: var(--alert); }
+  .page-title{
+    font-family:'Fraunces', Georgia, serif;
+    font-size: 26px;
+    font-weight: 600;
+    margin-top: 10px;
+    color: var(--ink);
+  }
+  .page-sub{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+  }
+
+  /* ---- Search / filter row ---- */
+  .search-wrap{ padding: 14px 20px 4px; }
+  .search-box{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 10px 12px;
+    color: var(--ink-soft);
+  }
+  .search-box svg{ flex-shrink:0; opacity:0.5; }
+  .search-box input{
+    flex:1;
+    border:none;
+    background:transparent;
+    font-family:'Inter', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    outline:none;
+    min-width:0;
+  }
+  .search-box input::placeholder{ color: var(--ink-faint); }
+  .search-clear{
+    border:none; background:transparent; cursor:pointer;
+    color: var(--ink-faint); font-size:17px; line-height:1;
+    padding:0 2px;
+  }
+
+  /* Index tabs — rolodex-style city filter, the signature element */
+  .index-tabs{
+    display:flex;
+    margin-top: 14px;
+    border-bottom: 1px solid var(--rule);
+    overflow-x:auto;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .index-tabs::-webkit-scrollbar{display:none;}
+  .index-tab{
+    flex-shrink:0;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 8px 13px 10px;
+    border:none;
+    background:transparent;
+    border-bottom: 2px solid transparent;
+    cursor:pointer;
+    white-space:nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .index-tab.active{
+    color: var(--teal);
+    border-bottom-color: var(--teal);
+    font-weight:600;
+  }
+  .chip-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding: 12px 20px 2px;
+    overflow-x:auto;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip-row:empty{ display:none; }
+  .chip-label{
+    flex-shrink:0;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+    padding-right: 2px;
+  }
+  .area-chip, .product-chip{
+    flex-shrink:0;
+    font-family:'Inter', sans-serif;
+    font-size: 11.5px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    color: var(--ink-soft);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .area-chip.active{
+    background: var(--gold-soft);
+    border-color: var(--gold);
+    color: var(--gold-ink);
+    font-weight:500;
+  }
+  .product-chip.active{
+    background: var(--teal-soft);
+    border-color: var(--teal);
+    color: var(--teal);
+    font-weight:500;
+  }
+
+  /* ---- Lead list ---- */
+  .list-wrap{
+    flex:1;
+    overflow-y:auto;
+    padding: 16px 20px 100px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lead-card{
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 14px 15px;
+    box-shadow: var(--card-shadow);
+    cursor:pointer;
+    text-align:left;
+    font-family:'Inter', sans-serif;
+    width:100%;
+  }
+  .lead-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap: 10px;
+  }
+  .lead-name{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    font-size: 16.5px;
+    color: var(--ink);
+  }
+  .lead-product{
+    font-size: 10.5px;
+    font-weight:600;
+    letter-spacing:0.02em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: var(--teal-soft);
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space:nowrap;
+  }
+  .lead-loc{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .lead-note{
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    line-height:1.45;
+    border-top: 1px dashed var(--rule);
+    padding-top: 8px;
+  }
+  .lead-note strong{ color: var(--ink); }
+  .when{ color: var(--ink-faint); }
+  .when.due{ color: var(--gold-ink); font-weight:500; }
+  .when.overdue{ color: var(--alert); font-weight:500; }
+
+  /* ---- FAB ---- */
+  .fab{
+    position:absolute;
+    right: 20px;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    width: 54px; height:54px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: white;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 26px;
+    box-shadow: 0 10px 24px -6px rgba(47,92,82,0.55);
+    cursor:pointer;
+    z-index: 20;
+    border: none;
+  }
+
+  /* ---- Sheets ---- */
+  .sheet{
+    position:absolute;
+    inset:0;
+    background: var(--paper);
+    transform: translateY(100%);
+    transition: transform .32s cubic-bezier(.32,.72,0,1);
+    display:flex;
+    flex-direction:column;
+    z-index: 30;
+    visibility:hidden;
+  }
+  .sheet.open{ transform: translateY(0); visibility:visible; }
+  .sheet-header{
+    padding: 20px 20px 14px;
+    padding-top: max(20px, env(safe-area-inset-top));
+    border-bottom: 1px solid var(--rule);
+    background: var(--paper-raised);
+    display:flex;
+    align-items:center;
+    gap: 12px;
+  }
+  .back-btn{
+    width:32px; height:32px;
+    border-radius: 8px;
+    background: var(--paper);
+    border:1px solid var(--rule);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .sheet-title{
+    flex:1; min-width:0;
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    font-size: 19px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .sheet-body{
+    flex:1;
+    overflow-y:auto;
+    padding: 20px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .detail-tag{
+    display:inline-block;
+    font-size: 10.5px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color: var(--teal);
+    background: var(--teal-soft);
+    padding: 4px 9px;
+    border-radius: 6px;
+  }
+  .detail-tagline{
+    font-size:12px; color:var(--ink-soft); line-height:1.5;
+    margin-top:7px;
+  }
+  .detail-field{ margin-bottom: 16px; }
+  .detail-field.first{ margin-top:14px; }
+  .detail-label{
+    font-size: 10.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color: var(--ink-faint);
+    margin-bottom: 4px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .detail-value{
+    font-size: 14.5px;
+    color: var(--ink);
+    line-height:1.5;
+  }
+  .detail-value.mono{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13.5px;
+  }
+  a.detail-value{ color: var(--teal); text-decoration:none; }
+  .link-btn{
+    border:none; background:transparent; padding:0;
+    font-family:'Inter',sans-serif; font-size:11px; font-weight:600;
+    color: var(--teal); cursor:pointer;
+    text-transform:none; letter-spacing:0; white-space:nowrap;
+  }
+  .doc-summary{
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .doc-list{
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--paper-raised);
+  }
+  .doc-list:empty::after{
+    content:'No documents on this list yet.';
+    display:block; padding:13px; font-size:12.5px; color:var(--ink-faint);
+  }
+  .doc-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 11px 13px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .doc-row:last-child{ border-bottom:none; }
+  .doc-row.busy{ opacity:.5; pointer-events:none; }
+  .doc-toggle{
+    display:flex; align-items:center; gap:10px;
+    flex:1; border:none; background:transparent; cursor:pointer;
+    font-family:'Inter',sans-serif; text-align:left; padding:0; min-width:0;
+  }
+  .doc-check{
+    width:19px; height:19px;
+    border-radius: 5px;
+    border: 1.5px solid #C9C1AE;
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background: #fff;
+  }
+  .doc-check.on{ background: var(--teal); border-color: var(--teal); }
+  .doc-check svg{ opacity:0; width:12px; height:12px; }
+  .doc-check.on svg{ opacity:1; }
+  .doc-name{ font-size: 13.5px; flex:1; color: var(--ink); }
+  .doc-row.on .doc-name{ color: var(--ink-soft); }
+  .doc-status{
+    font-size: 10px; font-weight:600;
+    text-transform: uppercase; letter-spacing:0.03em;
+    color: var(--ink-faint);
+  }
+  .doc-row.on .doc-status{ color: var(--teal); }
+  .doc-remove{
+    border:none; background:transparent; cursor:pointer;
+    color: var(--ink-faint); font-size:16px; line-height:1;
+    padding: 2px 0 2px 8px; flex-shrink:0;
+  }
+  .doc-add{ display:flex; gap:7px; margin-top:8px; }
+  .doc-add .form-input{ flex:1; padding:8px 11px; font-size:13px; }
+  .doc-add button{
+    border:1px solid var(--rule); background: var(--paper-raised);
+    border-radius:10px; padding:0 14px; cursor:pointer;
+    font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color: var(--teal);
+  }
+
+  .history-list{ display:flex; flex-direction:column; gap:8px; }
+  .history-entry{
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--teal);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .history-entry.latest{ border-left-color: var(--gold); }
+  .history-date{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    font-weight:500;
+    margin-bottom: 4px;
+  }
+  .history-entry.latest .history-date{ color: var(--gold-ink); }
+  .history-note{ font-size: 13px; color: var(--ink-soft); line-height:1.5; white-space:pre-wrap; }
+  .history-empty{ font-size:12.5px; color:var(--ink-faint); }
+
+  .add-followup-btn{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    width:100%;
+    border: 1.5px dashed #C9C1AE;
+    border-radius: 10px;
+    padding: 11px;
+    font-family:'Inter', sans-serif;
+    font-size: 13px; font-weight:600;
+    color: var(--teal);
+    background: transparent;
+    cursor:pointer;
+    margin-bottom: 12px;
+  }
+  .followup-form{
+    background: var(--teal-soft);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .followup-form .form-field{ margin-bottom: 12px; }
+  .followup-form .form-field:last-of-type{ margin-bottom:0; }
+  .save-followup-btn{
+    width:100%;
+    background: var(--teal);
+    color:#fff; border:none;
+    border-radius: 9px;
+    padding: 11px;
+    font-family:'Inter', sans-serif;
+    font-weight:600; font-size: 13.5px;
+    cursor:pointer;
+    margin-top: 12px;
+  }
+
+  /* ---- Forms ---- */
+  .form-field{ margin-bottom: 16px; }
+  .form-label{
+    font-size: 11.5px; font-weight:600;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+    display:block;
+  }
+  .form-label .req{ color: var(--alert); }
+  .form-input, .form-textarea, .form-select{
+    width:100%;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 11px 12px;
+    font-family:'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  /* Stop iOS zooming the page when a field takes focus. */
+  @media (pointer: coarse){
+    .form-input, .form-textarea, .form-select, .search-box input{ font-size: 16px; }
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus{
+    outline:none; border-color: var(--teal);
+  }
+  .form-input.invalid, .form-select.invalid{ border-color: var(--alert); }
+  .form-textarea{ resize:none; height: 70px; }
+  .form-row2{ display:flex; gap: 10px; }
+  .form-row2 .form-field{ flex:1; min-width:0; }
+  .form-row2 > button{ flex:1; min-width:0; }
+  .form-hint{ font-size:11px; color:var(--ink-faint); margin-top:5px; line-height:1.45; }
+  .picker-new{ margin-top:7px; }
+  .save-btn{
+    width:100%;
+    background: var(--teal);
+    color: white; border:none;
+    border-radius: 12px;
+    padding: 14px;
+    font-family:'Inter', sans-serif;
+    font-weight:600; font-size: 14.5px;
+    cursor:pointer;
+    margin-top: 6px;
+  }
+  .ghost-btn{
+    width:100%;
+    background: transparent;
+    border:1.5px dashed #C9C1AE;
+    border-radius: 10px;
+    padding: 11px;
+    font-family:'Inter',sans-serif;
+    font-size:13px; font-weight:600;
+    color: var(--teal);
+    cursor:pointer;
+  }
+  .danger-btn{
+    width:100%;
+    background: transparent;
+    border:1px solid var(--rule);
+    border-radius: 10px;
+    padding: 10px;
+    font-family:'Inter',sans-serif;
+    font-size:12.5px; font-weight:600;
+    color: var(--alert);
+    cursor:pointer;
+    margin-top: 10px;
+  }
+  button[disabled]{ opacity:.55; cursor:progress; }
+
+  .doc-preview{
+    border:1px solid var(--rule);
+    border-radius:10px;
+    background: var(--paper-raised);
+    padding: 11px 13px;
+    font-size:12.5px;
+    color: var(--ink-soft);
+    line-height:1.6;
+  }
+
+  /* ---- Products ---- */
+  .product-card{
+    border:1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper-raised);
+    margin-bottom: 10px;
+    overflow:hidden;
+  }
+  .product-head{
+    width:100%;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    padding: 13px 14px;
+    border:none; background:transparent;
+    font-family:'Inter',sans-serif; text-align:left; cursor:pointer;
+  }
+  .product-name{
+    font-family:'Fraunces',Georgia,serif;
+    font-weight:600; font-size:15.5px; color: var(--ink);
+  }
+  .product-desc{
+    font-size:12.5px; color:var(--ink-soft);
+    line-height:1.5; margin-top:4px;
+  }
+  .product-meta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; color:var(--ink-faint);
+    margin-top:7px;
+    text-transform:uppercase; letter-spacing:0.03em;
+  }
+  .product-chevron{ color: var(--ink-faint); flex-shrink:0; margin-top:3px; }
+  .product-card.off{ background: var(--paper); border-style: dashed; }
+  .product-card.off .product-name,
+  .product-card.off .product-desc{ color: var(--ink-faint); }
+  .product-badge{
+    display:inline-block;
+    margin-left:8px;
+    font-family:'Inter',sans-serif;
+    font-size:9.5px; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.04em;
+    color: var(--ink-soft);
+    background: var(--rule);
+    border-radius: 4px;
+    padding: 2px 6px;
+    vertical-align: middle;
+  }
+  .product-edit{
+    padding: 0 14px 14px;
+    border-top:1px solid var(--rule);
+    padding-top:14px;
+  }
+
+  /* ---- Login gate ---- */
+  .gate{
+    position:absolute;
+    inset:0;
+    z-index: 70;
+    background: var(--paper);
+    display:none;
+    flex-direction:column;
+    padding: 34px 26px;
+    padding-top: max(48px, env(safe-area-inset-top));
+    overflow-y:auto;
+  }
+  .device[data-state="login"] .gate{ display:flex; }
+  .gate .brandmark{ font-size: 27px; }
+  .gate-title{
+    font-family:'Fraunces',Georgia,serif;
+    font-size: 25px; font-weight:600;
+    margin-top: 26px;
+  }
+  .gate-sub{
+    font-size:13px; color: var(--ink-soft);
+    line-height:1.6; margin-top:8px; margin-bottom: 26px;
+  }
+  .gate-error{
+    background: #F6E4E0;
+    border:1px solid #E3BFB7;
+    color: var(--alert);
+    border-radius:10px;
+    padding: 10px 12px;
+    font-size:12.5px;
+    line-height:1.5;
+    margin-bottom: 16px;
+  }
+  .gate-remember{
+    display:flex; align-items:center; gap:9px;
+    font-size:12.5px; color: var(--ink-soft);
+    margin: 4px 0 20px;
+    cursor:pointer;
+  }
+  .gate-remember input{ width:16px; height:16px; accent-color: var(--teal); }
+  .gate-foot{
+    margin-top: 22px;
+    font-size:11.5px; color: var(--ink-faint);
+    line-height:1.6;
+  }
+
+  /* ---- States ---- */
+  .state{
+    flex:1;
+    display:none;
+    flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:10px;
+    padding: 40px 30px;
+    text-align:center;
+  }
+  .state h2{ font-family:'Fraunces',Georgia,serif; font-size:18px; font-weight:600; }
+  .state p{ font-size:13px; color:var(--ink-soft); line-height:1.6; }
+  .state code{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--alert); word-break:break-word; }
+  .state button{
+    margin-top:6px; background:var(--teal); color:#fff; border:none;
+    border-radius:10px; padding:10px 20px; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600; font-size:13.5px;
+  }
+  .spinner{
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid var(--rule); border-top-color: var(--teal);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .device[data-state="loading"] .state-loading,
+  .device[data-state="error"] .state-error{ display:flex; }
+  .device:not([data-state="ready"]) .search-wrap,
+  .device:not([data-state="ready"]) .list-wrap,
+  .device:not([data-state="ready"]) .fab,
+  .device:not([data-state="ready"]) .topbar-actions{ display:none; }
+
+  .empty{ text-align:center; color:var(--ink-faint); font-size:13px; padding:40px 10px; line-height:1.6; }
+
+  /* ---- Toast ---- */
+  .toast{
+    position:absolute;
+    left:20px; right:20px; bottom:88px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 12.5px; line-height:1.45;
+    z-index: 80;
+    opacity:0; transform: translateY(8px);
+    transition: opacity .2s, transform .2s;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform: translateY(0); }
+  .toast.bad{ background: var(--alert); }
+
+  /* ---- Footer credit ---- */
+  .credit{
+    position:absolute;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    text-align:center;
+    font-family:'Sora', sans-serif;
+    font-size: 11px;
+    opacity: 0.5;
+    letter-spacing: 0.01em;
+    pointer-events:none;
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+
+<div class="device" id="device" data-state="loading">
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brandmark"><span class="b1">Lead</span><span class="b4">Book</span></div>
+      <div class="topbar-actions">
+        <div class="agent-chip" id="agentChip">&nbsp;</div>
+        <button class="icon-btn" id="menuBtn" aria-label="Menu">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="5" r="0.5"/><circle cx="12" cy="12" r="0.5"/><circle cx="12" cy="19" r="0.5"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="page-title">Your leads</div>
+    <div class="page-sub" id="pageSub">Loading…</div>
+  </div>
+
+  <div class="menu" id="menu" hidden>
+    <button id="menuProducts">Products &amp; documents</button>
+    <button id="menuSignOut">Sign out</button>
+  </div>
+
+  <div class="state state-loading">
+    <div class="spinner"></div>
+    <p>Fetching your leads…</p>
+  </div>
+
+  <div class="state state-error">
+    <h2>Couldn't load your leads</h2>
+    <p id="errorText"></p>
+    <p><code id="errorDetail"></code></p>
+    <button id="retryBtn">Try again</button>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="searchInput" type="search" placeholder="Search by name or phone" autocomplete="off" enterkeyhint="search">
+      <button class="search-clear" id="searchClear" aria-label="Clear search" hidden>&times;</button>
+    </div>
+
+    <div class="index-tabs" id="cityTabs"></div>
+    <div class="chip-row" id="areaRow"></div>
+    <div class="chip-row" id="productRow"></div>
+  </div>
+
+  <div class="list-wrap" id="listWrap"></div>
+
+  <button class="fab" id="fabAdd" aria-label="Add lead">+</button>
+
+  <!-- Lead detail -->
+  <div class="sheet" id="detailSheet">
+    <div class="sheet-header">
+      <button class="back-btn" data-close aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#26221C" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="sheet-title" id="detailName">Lead detail</div>
+      <button class="icon-btn" id="editLeadBtn" aria-label="Edit lead details">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body" id="detailBody"></div>
+  </div>
+
+  <!-- Add lead -->
+  <div class="sheet" id="addSheet">
+    <div class="sheet-header">
+      <button class="back-btn" data-close aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#26221C" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="sheet-title">New lead</div>
+    </div>
+    <div class="sheet-body">
+      <form id="addForm" novalidate>
+        <div class="form-field">
+          <label class="form-label" for="afName">Full name <span class="req">*</span></label>
+          <input class="form-input" id="afName" placeholder="e.g. Rakesh Chauhan" autocomplete="name">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="afPhone">Phone number <span class="req">*</span></label>
+          <input class="form-input" id="afPhone" type="tel" placeholder="+91 98XXX XXXXX" autocomplete="tel">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="afAddress">Address</label>
+          <input class="form-input" id="afAddress" placeholder="House / street">
+        </div>
+        <div class="form-row2">
+          <div class="form-field">
+            <label class="form-label" for="afCity">City <span class="req">*</span></label>
+            <div id="afCityWrap"></div>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="afArea">Area</label>
+            <div id="afAreaWrap"></div>
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="afProduct">Product pitched <span class="req">*</span></label>
+          <select class="form-select" id="afProduct"></select>
+          <div class="form-hint" id="afProductDesc"></div>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Documents to collect</label>
+          <div class="doc-preview" id="afDocPreview"></div>
+          <div class="form-hint">Taken from this product's document list. You can add or remove documents on the lead afterwards.</div>
+        </div>
+        <div class="form-row2">
+          <div class="form-field">
+            <label class="form-label" for="afVisit">Next visit date</label>
+            <input class="form-input" id="afVisit" type="date">
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="afNextStep">Next step</label>
+            <input class="form-input" id="afNextStep" placeholder="e.g. Call back with quote">
+          </div>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="afNote">First meeting notes</label>
+          <textarea class="form-textarea" id="afNote" placeholder="What happened at this first meeting…"></textarea>
+          <div class="form-hint">Saved as the first entry in this lead's follow-up history.</div>
+        </div>
+        <button class="save-btn" id="afSave" type="submit">Save lead</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <div class="sheet" id="productSheet">
+    <div class="sheet-header">
+      <button class="back-btn" data-close aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#26221C" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="sheet-title">Products &amp; documents</div>
+    </div>
+    <div class="sheet-body" id="productBody"></div>
+  </div>
+
+  <!-- Login -->
+  <div class="gate" id="gate">
+    <div class="brandmark"><span class="b1">Lead</span><span class="b4">Book</span></div>
+    <div class="gate-title" id="gateTitle">Sign in</div>
+    <div class="gate-sub">Use the mobile number and email registered for your LeadBook.</div>
+
+    <form id="gateForm" novalidate>
+      <div class="gate-error" id="gateError" hidden></div>
+
+      <div class="form-field">
+        <label class="form-label" for="gatePhone">Mobile number</label>
+        <input class="form-input" id="gatePhone" type="tel" inputmode="tel"
+               placeholder="98XXX XXXXX" autocomplete="tel">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="gateEmail">Email address</label>
+        <input class="form-input" id="gateEmail" type="email" inputmode="email"
+               placeholder="you@example.com" autocomplete="email" autocapitalize="off" spellcheck="false">
+      </div>
+
+      <label class="gate-remember">
+        <input type="checkbox" id="gateRemember" checked>
+        Keep me signed in on this phone
+      </label>
+
+      <button class="save-btn" id="gateSubmit" type="submit">Sign in</button>
+    </form>
+
+    <div class="gate-foot" id="gateFoot"></div>
+    <div class="credit">created by ai4work</div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="credit">created by ai4work</div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+   * Which agent is this?
+   *
+   * Nothing in this file names an agent, and there is no default
+   * agent. A deployment serves either one agent (config.json) or
+   * many (config-<slug>.json). Onboarding someone is a new config
+   * file and nothing else — see CLAUDE.md.
+   * ============================================================ */
+  function resolveAgent() {
+    var fromQuery = new URLSearchParams(location.search).get('agent');
+    if (fromQuery) return { slug: fromQuery.toLowerCase(), explicit: true };
+
+    var fromSubdomain = location.hostname.match(/^leadbook-([a-z0-9-]+)\./i);
+    if (fromSubdomain) return { slug: fromSubdomain[1].toLowerCase(), explicit: true };
+
+    // A path segment is a guess, not a statement — in `/leadbook/` that segment
+    // is the repo name — so it is allowed to fall through to config.json.
+    var segments = location.pathname.split('/').filter(Boolean);
+    var last = segments[segments.length - 1] || '';
+    if (last && !/\.html?$/i.test(last)) return { slug: last.toLowerCase(), explicit: false };
+
+    return { slug: '', explicit: false };
+  }
+
+  var AGENT = resolveAgent();
+  var STORE_KEY = 'leadbook';   // narrowed to this agent once the config loads
+
+  /**
+   * An explicitly named agent must have her own file — falling back would sign
+   * someone into the wrong LeadBook. A guessed one may fall through.
+   */
+  function loadConfig() {
+    var candidates = [];
+    if (AGENT.slug) candidates.push('config-' + AGENT.slug + '.json');
+    if (!AGENT.explicit) candidates.push('config.json');
+
+    return candidates
+      .reduce(function (chain, file) {
+        return chain.catch(function () {
+          return fetch(file, { cache: 'no-store' }).then(function (r) {
+            if (!r.ok) throw new Error('not found');
+            return r.json();
+          });
+        });
+      }, Promise.reject())
+      .catch(function () {
+        throw new Error('No config file found — expected ' + candidates.join(' or '));
+      });
+  }
+
+
+  /* ============================================================
+   * Session
+   *
+   * The access token is never in a deployed file — the server hands
+   * it over once the agent's mobile and email check out. "Keep me
+   * signed in" is the difference between localStorage (survives a
+   * closed browser) and sessionStorage (does not).
+   * ============================================================ */
+  var session = {
+    token: null,
+
+    load: function () {
+      try {
+        var raw = localStorage.getItem(STORE_KEY) || sessionStorage.getItem(STORE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) { return null; }
+    },
+
+    save: function (data, remember) {
+      this.token = data.token;
+      try {
+        (remember ? localStorage : sessionStorage).setItem(STORE_KEY, JSON.stringify(data));
+      } catch (e) { /* private mode — the session just won't outlive the tab */ }
+    },
+
+    clear: function () {
+      this.token = null;
+      try {
+        localStorage.removeItem(STORE_KEY);
+        sessionStorage.removeItem(STORE_KEY);
+      } catch (e) {}
+    }
+  };
+
+
+  /* ============================================================
+   * State
+   * ============================================================ */
+  var CONFIG = null;
+  var state = {
+    leads: [],
+    followUps: [],
+    documents: [],
+    products: [],
+    docTemplates: [],
+    city: 'all',
+    area: 'all',
+    product: 'all',
+    query: '',
+    activeLeadId: null,
+    openProduct: null,
+    addingProduct: false
+  };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var device = $('device');
+
+
+  /* ============================================================
+   * API
+   * ============================================================ */
+  var api = {
+    get: function () {
+      var url = CONFIG.appsScriptUrl + '?' +
+        new URLSearchParams({ action: 'bootstrap', secret: session.token });
+      return fetch(url, { method: 'GET', redirect: 'follow' }).then(unwrap);
+    },
+
+    post: function (action, payload) {
+      return fetch(CONFIG.appsScriptUrl, {
+        method: 'POST',
+        redirect: 'follow',
+        // text/plain keeps this a "simple request" so the browser skips the
+        // CORS preflight, which Apps Script has no way to answer.
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, secret: session.token, payload: payload })
+      }).then(unwrap);
+    }
+  };
+
+  function unwrap(response) {
+    if (!response.ok) throw new Error('Server returned ' + response.status);
+    return response.text().then(function (text) {
+      var body;
+      try {
+        body = JSON.parse(text);
+      } catch (e) {
+        throw new Error('Unexpected response from the server. Check that the Web App is deployed with access set to "Anyone".');
+      }
+      if (!body.ok) {
+        var err = new Error(body.error || 'Request failed');
+        if (/unauthoris/i.test(body.error || '')) err.auth = true;
+        throw err;
+      }
+      return body.data;
+    });
+  }
+
+  /** One place that decides whether a failure means "signed out" or "show a toast". */
+  function handle(err) {
+    if (err && err.auth) {
+      session.clear();
+      showGate('Your session has expired. Please sign in again.');
+      return;
+    }
+    toast(err.message, true);
+  }
+
+
+  /* ============================================================
+   * Formatting
+   * ============================================================ */
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  /** ISO in the Sheet, `12 Aug 2026` on screen — never the other way round. */
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var parts = String(iso).slice(0, 10).split('-');
+    if (parts.length !== 3) return String(iso);
+    return Number(parts[2]) + ' ' + MONTHS[Number(parts[1]) - 1] + ' ' + parts[0];
+  }
+
+  function todayIso() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  function daysBetween(isoA, isoB) {
+    return Math.round((Date.parse(isoA + 'T00:00:00') - Date.parse(isoB + 'T00:00:00')) / 86400000);
+  }
+
+  function dueClass(iso) {
+    if (!iso) return '';
+    var diff = daysBetween(iso, todayIso());
+    if (isNaN(diff)) return '';
+    if (diff < 0) return 'overdue';
+    if (diff <= 1) return 'due';
+    return '';
+  }
+
+  function dueLabel(iso) {
+    if (!iso) return 'No date set';
+    var diff = daysBetween(iso, todayIso());
+    if (diff === 0) return 'Today';
+    if (diff === 1) return 'Tomorrow';
+    if (diff < 0) return fmtDate(iso) + ' · overdue';
+    return fmtDate(iso);
+  }
+
+  function digits(v) { return String(v || '').replace(/\D/g, ''); }
+  function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+
+
+  /* ============================================================
+   * Derived data
+   * ============================================================ */
+  function docsFor(leadId) {
+    return state.documents.filter(function (d) { return d.LeadID === leadId; });
+  }
+
+  function followUpsFor(leadId) {
+    // Newest first by meeting Date, not LoggedAt — LoggedAt only breaks ties.
+    return state.followUps
+      .filter(function (f) { return f.LeadID === leadId; })
+      .sort(function (a, b) {
+        return String(b.Date).localeCompare(String(a.Date)) ||
+               String(b.LoggedAt || '').localeCompare(String(a.LoggedAt || ''));
+      });
+  }
+
+  function leadById(id) {
+    return state.leads.filter(function (l) { return l.LeadID === id; })[0] || null;
+  }
+
+  function productByName(name) {
+    return state.products.filter(function (p) { return p.Product === name; })[0] || null;
+  }
+
+  /** What she can pitch today. Switched-off products stay on the leads that hold them. */
+  function activeProducts() {
+    return state.products.filter(function (p) { return p.Active !== false; });
+  }
+
+  function templatesFor(product) {
+    return state.docTemplates
+      .filter(function (t) { return t.Product === product; })
+      .sort(function (a, b) { return (a.SortOrder || 0) - (b.SortOrder || 0); });
+  }
+
+  /** Cities that actually have leads — the filter tabs run off live data. */
+  function cities() {
+    var preferred = CONFIG.defaultCityOrder || [];
+    var found = [];
+    state.leads.forEach(function (l) {
+      if (l.City && found.indexOf(l.City) === -1) found.push(l.City);
+    });
+    var head = preferred.filter(function (c) { return found.indexOf(c) !== -1; });
+    var tail = found.filter(function (c) { return head.indexOf(c) === -1; }).sort();
+    return head.concat(tail);
+  }
+
+  /** Cities offered when adding a lead — includes configured ones with no leads yet. */
+  function cityOptions() {
+    var out = cities();
+    (CONFIG.defaultCityOrder || []).forEach(function (c) {
+      if (out.indexOf(c) === -1) out.push(c);
+    });
+    return out;
+  }
+
+  /**
+   * Products her leads are actually on, in her own Products-tab order. Unlike
+   * areas, products are not nested under a city — she sells the same range
+   * everywhere — so this list does not narrow when a city is picked.
+   */
+  function productsInUse() {
+    var used = [];
+    state.leads.forEach(function (l) {
+      if (l.Product && used.indexOf(l.Product) === -1) used.push(l.Product);
+    });
+
+    var ordered = state.products
+      .map(function (p) { return p.Product; })
+      .filter(function (name) { return used.indexOf(name) !== -1; });
+
+    return ordered.concat(
+      used.filter(function (n) { return ordered.indexOf(n) === -1; }).sort()
+    );
+  }
+
+  function areasIn(city) {
+    var pool = city === 'all'
+      ? state.leads
+      : state.leads.filter(function (l) { return l.City === city; });
+    var out = [];
+    pool.forEach(function (l) {
+      if (l.Area && out.indexOf(l.Area) === -1) out.push(l.Area);
+    });
+    return out.sort();
+  }
+
+  function visibleLeads() {
+    var q = state.query.trim().toLowerCase();
+    var qDigits = digits(q);
+
+    return state.leads.filter(function (l) {
+      if (state.city !== 'all' && l.City !== state.city) return false;
+      if (state.area !== 'all' && l.Area !== state.area) return false;
+      if (state.product !== 'all' && l.Product !== state.product) return false;
+      if (!q) return true;
+      var nameHit = String(l.Name).toLowerCase().indexOf(q) !== -1;
+      var phoneHit = qDigits.length > 0 && digits(l.Phone).indexOf(qDigits) !== -1;
+      return nameHit || phoneHit;
+    }).sort(function (a, b) {
+      // Soonest visit first; leads with no date sink to the bottom.
+      if (!a.NextVisitDate && !b.NextVisitDate) return String(a.Name).localeCompare(String(b.Name));
+      if (!a.NextVisitDate) return 1;
+      if (!b.NextVisitDate) return -1;
+      return String(a.NextVisitDate).localeCompare(String(b.NextVisitDate));
+    });
+  }
+
+
+  /* ============================================================
+   * "Pick one, or add a new one" control
+   *
+   * This is how the agent grows her own city and area lists — the
+   * dropdown holds what she has used before, and the last option
+   * opens a free-text box for anything new.
+   * ============================================================ */
+  function pickerHtml(id, options, current, addLabel, placeholder) {
+    var list = options.slice();
+    if (current && list.indexOf(current) === -1) list.unshift(current);
+
+    var html = '<select class="form-select" id="' + id + '">';
+    if (!current) html += '<option value="">Select…</option>';
+    list.forEach(function (option) {
+      html += '<option value="' + esc(option) + '"' +
+              (option === current ? ' selected' : '') + '>' + esc(option) + '</option>';
+    });
+    html += '<option value="__new__">' + esc(addLabel) + '</option></select>';
+    html += '<input class="form-input picker-new" id="' + id + '-new" ' +
+            'placeholder="' + esc(placeholder) + '" hidden>';
+    return html;
+  }
+
+  function wirePicker(id, onChange) {
+    var select = $(id);
+    var input = $(id + '-new');
+
+    // Nothing to pick from yet — go straight to the free-text box.
+    var hasChoices = Array.prototype.some.call(select.options, function (o) {
+      return o.value && o.value !== '__new__';
+    });
+    if (!hasChoices) {
+      select.value = '__new__';
+      input.hidden = false;
+    }
+
+    select.addEventListener('change', function () {
+      var isNew = select.value === '__new__';
+      input.hidden = !isNew;
+      if (isNew) input.focus();
+      if (onChange) onChange();
+    });
+  }
+
+  function pickerValue(id) {
+    var select = $(id);
+    return select.value === '__new__' ? $(id + '-new').value.trim() : select.value;
+  }
+
+
+  /* ============================================================
+   * Render — list
+   * ============================================================ */
+  function renderHeader() {
+    $('agentChip').textContent = CONFIG.agentName || '';
+
+    var week = state.leads.filter(function (l) {
+      return l.CreatedDate && daysBetween(todayIso(), l.CreatedDate) <= 7;
+    }).length;
+
+    $('pageSub').textContent = state.leads.length
+      ? plural(state.leads.length, 'lead') + ' · ' + week + ' added this week'
+      : 'No leads yet — tap + to add your first';
+  }
+
+  function renderCityTabs() {
+    $('cityTabs').innerHTML =
+      '<button class="index-tab' + (state.city === 'all' ? ' active' : '') + '" data-city="all">All cities</button>' +
+      cities().map(function (c) {
+        return '<button class="index-tab' + (state.city === c ? ' active' : '') +
+               '" data-city="' + esc(c) + '">' + esc(c) + '</button>';
+      }).join('');
+  }
+
+  /** Areas only mean something once a city is chosen — "Vesu" across every city is noise. */
+  function renderAreaChips() {
+    if (state.city === 'all') { $('areaRow').innerHTML = ''; return; }
+
+    var areas = areasIn(state.city);
+    if (!areas.length) { $('areaRow').innerHTML = ''; return; }
+
+    $('areaRow').innerHTML =
+      '<span class="chip-label">Area</span>' +
+      '<button class="area-chip' + (state.area === 'all' ? ' active' : '') + '" data-area="all">All</button>' +
+      areas.map(function (a) {
+        return '<button class="area-chip' + (state.area === a ? ' active' : '') +
+               '" data-area="' + esc(a) + '">' + esc(a) + '</button>';
+      }).join('');
+  }
+
+  function renderProductChips() {
+    var products = productsInUse();
+
+    // A single product is not a filter, it is a label.
+    if (products.length < 2) { $('productRow').innerHTML = ''; return; }
+
+    $('productRow').innerHTML =
+      '<span class="chip-label">Product</span>' +
+      '<button class="product-chip' + (state.product === 'all' ? ' active' : '') +
+        '" data-product-filter="all">All</button>' +
+      products.map(function (p) {
+        return '<button class="product-chip' + (state.product === p ? ' active' : '') +
+               '" data-product-filter="' + esc(p) + '">' + esc(p) + '</button>';
+      }).join('');
+  }
+
+  function renderList() {
+    var leads = visibleLeads();
+
+    if (!leads.length) {
+      $('listWrap').innerHTML = state.leads.length
+        ? '<div class="empty">No leads match this filter.</div>'
+        : '<div class="empty">No leads here yet.<br>Tap + to add one.</div>';
+      return;
+    }
+
+    $('listWrap').innerHTML = leads.map(function (l) {
+      var docs = docsFor(l.LeadID);
+      var shared = docs.filter(function (d) { return d.Shared; }).length;
+      var meetings = followUpsFor(l.LeadID).length;
+      var place = [l.Area, l.City].filter(Boolean).join(', ');
+
+      return '<button class="lead-card" data-lead="' + esc(l.LeadID) + '">' +
+        '<div class="lead-top">' +
+          '<div class="lead-name">' + esc(l.Name) + '</div>' +
+          '<div class="lead-product">' + esc(l.Product) + '</div>' +
+        '</div>' +
+        '<div class="lead-loc">' +
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+          esc(place || '—') +
+        '</div>' +
+        '<div class="lead-note"><strong>Next:</strong> ' + esc(l.NextStep || 'Not set') +
+          ' <span class="when ' + dueClass(l.NextVisitDate) + '">· ' + esc(dueLabel(l.NextVisitDate)) + '</span></div>' +
+        '<div class="lead-loc" style="margin-top:6px;">' +
+          '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>' +
+          'Docs: ' + shared + '/' + docs.length + ' shared &nbsp;·&nbsp; ' +
+          plural(meetings, 'meeting') + ' logged' +
+        '</div>' +
+      '</button>';
+    }).join('');
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderCityTabs();
+    renderAreaChips();
+    renderProductChips();
+    renderList();
+  }
+
+
+  /* ============================================================
+   * Render — lead detail
+   * ============================================================ */
+  function checkSvg() {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  }
+
+  function renderDocList(leadId) {
+    var docs = docsFor(leadId);
+    var shared = docs.filter(function (d) { return d.Shared; }).length;
+
+    $('docList').innerHTML = docs.map(function (d) {
+      return '<div class="doc-row' + (d.Shared ? ' on' : '') + '" data-doc="' + esc(d.DocID) + '">' +
+        '<button class="doc-toggle" data-toggle="' + esc(d.DocID) + '">' +
+          '<span class="doc-check' + (d.Shared ? ' on' : '') + '">' + checkSvg() + '</span>' +
+          '<span class="doc-name">' + esc(d.DocName) + '</span>' +
+          '<span class="doc-status">' + (d.Shared ? 'Shared' : 'Pending') + '</span>' +
+        '</button>' +
+        '<button class="doc-remove" data-remove="' + esc(d.DocID) + '" aria-label="Remove document">&times;</button>' +
+      '</div>';
+    }).join('');
+
+    $('docSummary').textContent = docs.length ? shared + '/' + docs.length + ' shared' : '';
+  }
+
+  function renderHistory(leadId) {
+    var entries = followUpsFor(leadId);
+    $('historyList').innerHTML = entries.length
+      ? entries.map(function (f, i) {
+          return '<div class="history-entry' + (i === 0 ? ' latest' : '') + '">' +
+            '<div class="history-date">' + esc(fmtDate(f.Date)) + (i === 0 ? ' · latest' : '') + '</div>' +
+            '<div class="history-note">' + esc(f.Note) + '</div>' +
+          '</div>';
+        }).join('')
+      : '<div class="history-empty">No meetings logged yet.</div>';
+  }
+
+  /**
+   * The lead's identity — who they are, what they were pitched, where they live.
+   * One edit mode for the lot, rather than an Edit link per field.
+   */
+  function renderLeadBlock(lead, editing) {
+    var block = $('leadBlock');
+    $('editLeadBtn').hidden = editing;
+
+    if (!editing) {
+      var product = productByName(lead.Product);
+      block.innerHTML =
+        '<div class="detail-tag">' + esc(lead.Product) + '</div>' +
+        (product && product.Description
+          ? '<div class="detail-tagline">' + esc(product.Description) + '</div>'
+          : '') +
+        '<div class="detail-field first">' +
+          '<div class="detail-label"><span>Phone</span></div>' +
+          '<a class="detail-value mono" href="tel:' + esc(digits(lead.Phone)) + '">' +
+            esc(lead.Phone) + '</a>' +
+        '</div>' +
+        '<div class="detail-field">' +
+          '<div class="detail-label"><span>Address</span></div>' +
+          '<div class="detail-value">' +
+            esc([lead.Address, lead.Area, lead.City].filter(Boolean).join(', ') || '—') +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
+    // Offer what she still sells, plus this lead's own product even if she has
+    // since switched it off — otherwise opening the editor would silently move
+    // the lead onto whichever product happens to sort first.
+    var options = activeProducts().map(function (p) { return p.Product; });
+    if (lead.Product && options.indexOf(lead.Product) === -1) options.unshift(lead.Product);
+
+    block.innerHTML =
+      '<div class="form-field">' +
+        '<label class="form-label" for="edName">Full name <span class="req">*</span></label>' +
+        '<input class="form-input" id="edName" value="' + esc(lead.Name) + '">' +
+      '</div>' +
+      '<div class="form-field">' +
+        '<label class="form-label" for="edPhone">Phone number <span class="req">*</span></label>' +
+        '<input class="form-input" id="edPhone" type="tel" value="' + esc(lead.Phone) + '">' +
+      '</div>' +
+      '<div class="form-field">' +
+        '<label class="form-label" for="edProduct">Product pitched</label>' +
+        '<select class="form-select" id="edProduct">' +
+          options.map(function (o) {
+            return '<option value="' + esc(o) + '"' +
+                   (o === lead.Product ? ' selected' : '') + '>' + esc(o) + '</option>';
+          }).join('') +
+        '</select>' +
+        '<div class="form-hint">The documents already on this lead stay exactly as they are — ' +
+          'changing the product here will not add or remove any.</div>' +
+      '</div>' +
+      '<div class="form-field">' +
+        '<label class="form-label" for="edAddress">Address</label>' +
+        '<input class="form-input" id="edAddress" value="' + esc(lead.Address || '') +
+          '" placeholder="House / street">' +
+      '</div>' +
+      '<div class="form-row2">' +
+        '<div class="form-field">' +
+          '<label class="form-label">City <span class="req">*</span></label>' +
+          pickerHtml('edCity', cityOptions(), lead.City, '+ Add a new city', 'New city name') +
+        '</div>' +
+        '<div class="form-field">' +
+          '<label class="form-label">Area</label>' +
+          pickerHtml('edArea', areasIn(lead.City), lead.Area, '+ Add a new area', 'New area name') +
+        '</div>' +
+      '</div>' +
+      '<div class="form-row2">' +
+        '<button class="ghost-btn" id="edCancel" type="button">Cancel</button>' +
+        '<button class="save-followup-btn" id="edSave" type="button" style="margin-top:0;">Save details</button>' +
+      '</div>';
+
+    wirePicker('edCity', function () {
+      // Re-offer the areas that belong to whichever city is now selected.
+      var wrap = $('edArea').parentNode;
+      wrap.innerHTML = '<label class="form-label">Area</label>' +
+        pickerHtml('edArea', areasIn(pickerValue('edCity')), '', '+ Add a new area', 'New area name');
+      wirePicker('edArea');
+    });
+    wirePicker('edArea');
+
+    $('edCancel').addEventListener('click', function () { renderLeadBlock(lead, false); });
+    $('edSave').addEventListener('click', function () { saveDetails(lead, this); });
+  }
+
+  function openDetail(leadId) {
+    var lead = leadById(leadId);
+    if (!lead) return;
+    state.activeLeadId = leadId;
+
+    $('detailName').textContent = lead.Name;
+    $('detailBody').innerHTML =
+      '<div id="leadBlock"></div>' +
+
+      '<div class="form-row2">' +
+        '<div class="detail-field">' +
+          '<div class="detail-label"><span>Next visit</span></div>' +
+          '<div class="detail-value mono ' + dueClass(lead.NextVisitDate) + '">' +
+            esc(dueLabel(lead.NextVisitDate)) + '</div>' +
+        '</div>' +
+        '<div class="detail-field">' +
+          '<div class="detail-label"><span>Next step</span></div>' +
+          '<div class="detail-value">' + esc(lead.NextStep || 'Not set') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="detail-field">' +
+        '<div class="detail-label">' +
+          '<span>Documents to share &nbsp;<span class="doc-summary" id="docSummary"></span></span>' +
+        '</div>' +
+        '<div class="doc-list" id="docList"></div>' +
+        '<div class="doc-add">' +
+          '<input class="form-input" id="newDocName" placeholder="Add another document">' +
+          '<button type="button" id="addDocBtn">Add</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="detail-field">' +
+        '<div class="detail-label"><span>Follow-up history</span></div>' +
+        '<button class="add-followup-btn" id="addFollowupBtn">+ &nbsp;Log a meeting</button>' +
+        '<div class="followup-form" id="followupForm" hidden>' +
+          '<div class="form-field">' +
+            '<label class="form-label" for="fuDate">Meeting date</label>' +
+            '<input class="form-input" type="date" id="fuDate">' +
+          '</div>' +
+          '<div class="form-field">' +
+            '<label class="form-label" for="fuNote">What happened</label>' +
+            '<textarea class="form-textarea" id="fuNote" placeholder="Notes from this meeting…"></textarea>' +
+          '</div>' +
+          '<div class="form-row2">' +
+            '<div class="form-field">' +
+              '<label class="form-label" for="fuNextVisit">Next visit date</label>' +
+              '<input class="form-input" type="date" id="fuNextVisit" value="' + esc(lead.NextVisitDate || '') + '">' +
+            '</div>' +
+            '<div class="form-field">' +
+              '<label class="form-label" for="fuNextStep">Next step</label>' +
+              '<input class="form-input" id="fuNextStep" value="' + esc(lead.NextStep || '') + '">' +
+            '</div>' +
+          '</div>' +
+          '<button class="save-followup-btn" id="saveFollowupBtn" type="button">Save follow-up</button>' +
+        '</div>' +
+        '<div class="history-list" id="historyList"></div>' +
+      '</div>';
+
+    renderLeadBlock(lead, false);
+    renderDocList(leadId);
+    renderHistory(leadId);
+    $('fuDate').value = todayIso();
+    wireDetail(leadId);
+
+    $('detailSheet').classList.add('open');
+  }
+
+  function wireDetail(leadId) {
+    $('addFollowupBtn').addEventListener('click', function () {
+      var form = $('followupForm');
+      form.hidden = !form.hidden;
+      if (!form.hidden) $('fuNote').focus();
+    });
+
+    $('saveFollowupBtn').addEventListener('click', function () { saveFollowUp(leadId, this); });
+    $('addDocBtn').addEventListener('click', function () { addDocument(leadId, this); });
+
+    $('newDocName').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addDocument(leadId, $('addDocBtn')); }
+    });
+
+    $('docList').addEventListener('click', function (e) {
+      var toggle = e.target.closest('[data-toggle]');
+      if (toggle) return toggleDocument(toggle.dataset.toggle, leadId);
+
+      var remove = e.target.closest('[data-remove]');
+      if (remove) return removeDocument(remove.dataset.remove, leadId);
+    });
+  }
+
+
+  /* ============================================================
+   * Render — products
+   * ============================================================ */
+  function renderProducts() {
+    var html = state.products.map(function (p) {
+      var docs = templatesFor(p.Product);
+      var leadCount = state.leads.filter(function (l) { return l.Product === p.Product; }).length;
+      var open = state.openProduct === p.Product;
+      var off = p.Active === false;
+
+      return '<div class="product-card' + (off ? ' off' : '') + '">' +
+        '<button class="product-head" data-product="' + esc(p.Product) + '">' +
+          '<span>' +
+            '<span class="product-name">' + esc(p.Product) +
+              (off ? '<span class="product-badge">Not offered</span>' : '') + '</span>' +
+            (p.Description ? '<span class="product-desc">' + esc(p.Description) + '</span>' : '') +
+            '<span class="product-meta">' + plural(docs.length, 'document') + ' · ' +
+              plural(leadCount, 'lead') + '</span>' +
+          '</span>' +
+          '<span class="product-chevron">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+            '<path d="M' + (open ? '18 15l-6-6-6 6' : '9 18l6-6-6-6') + '"/></svg>' +
+          '</span>' +
+        '</button>' +
+        (open ? productEditorHtml(p, docs) : '') +
+      '</div>';
+    }).join('');
+
+    if (!state.products.length) {
+      html = '<div class="empty">No products yet.<br>Add the ones you sell.</div>';
+    }
+
+    html += state.addingProduct
+      ? '<div class="product-card"><div class="product-edit" style="border-top:none;padding-top:14px;">' +
+          '<div class="form-field">' +
+            '<label class="form-label" for="npName">Product name <span class="req">*</span></label>' +
+            '<input class="form-input" id="npName" placeholder="e.g. Personal Accident Cover">' +
+          '</div>' +
+          '<div class="form-field">' +
+            '<label class="form-label" for="npDesc">Description</label>' +
+            '<textarea class="form-textarea" id="npDesc" placeholder="What this product covers, in your own words…"></textarea>' +
+            '<div class="form-hint">Shown on the lead when you open it — a reminder of what you are pitching.</div>' +
+          '</div>' +
+          '<div class="form-field">' +
+            '<label class="form-label" for="npDocs">Documents needed</label>' +
+            '<input class="form-input" id="npDocs" placeholder="PAN Card, Aadhar Card, Photograph">' +
+            '<div class="form-hint">Separate with commas. Every new lead on this product starts with this checklist.</div>' +
+          '</div>' +
+          '<div class="form-row2">' +
+            '<button class="ghost-btn" id="npCancel" type="button">Cancel</button>' +
+            '<button class="save-followup-btn" id="npSave" type="button" style="margin-top:0;">Add product</button>' +
+          '</div>' +
+        '</div></div>'
+      : '<button class="ghost-btn" id="addProductBtn" type="button">+ &nbsp;Add a product</button>';
+
+    $('productBody').innerHTML = html;
+    wireProducts();
+  }
+
+  function productEditorHtml(product, docs) {
+    return '<div class="product-edit">' +
+      '<div class="form-field">' +
+        '<label class="form-label">Product name</label>' +
+        '<input class="form-input" id="epName" value="' + esc(product.Product) + '">' +
+      '</div>' +
+      '<div class="form-field">' +
+        '<label class="form-label">Description</label>' +
+        '<textarea class="form-textarea" id="epDesc" placeholder="What this product covers…">' +
+          esc(product.Description || '') + '</textarea>' +
+      '</div>' +
+      '<div class="form-field">' +
+        '<label class="form-label">Documents needed by default</label>' +
+        '<div class="doc-list" id="epDocs">' +
+          docs.map(function (t) {
+            return '<div class="doc-row">' +
+              '<span class="doc-name">' + esc(t.DocName) + '</span>' +
+              '<button class="doc-remove" data-doc-template="' + esc(t.DocName) + '" aria-label="Remove">&times;</button>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+        '<div class="doc-add">' +
+          '<input class="form-input" id="epNewDoc" placeholder="Add a document">' +
+          '<button type="button" id="epAddDoc">Add</button>' +
+        '</div>' +
+        '<div class="form-hint">Changing this list affects new leads only — existing leads keep the checklist they already have.</div>' +
+      '</div>' +
+      '<button class="save-followup-btn" id="epSave" type="button" style="margin-top:0;">Save changes</button>' +
+      (product.Active === false
+        ? '<button class="ghost-btn" id="epToggleActive" type="button" style="margin-top:10px;">' +
+            'Start offering this again</button>'
+        : '<button class="danger-btn" id="epToggleActive" type="button">Stop offering this</button>') +
+      '<div class="form-hint">' +
+        (product.Active === false
+          ? 'Switched off, so it is not offered when you add a lead. Leads already on it are untouched.'
+          : 'It stops appearing when you add a new lead. Leads already on it keep it, and you can switch it back on any time.') +
+      '</div>' +
+    '</div>';
+  }
+
+  function wireProducts() {
+    $('productBody').querySelectorAll('[data-product]').forEach(function (head) {
+      head.addEventListener('click', function () {
+        var name = head.dataset.product;
+        state.openProduct = state.openProduct === name ? null : name;
+        state.addingProduct = false;
+        renderProducts();
+      });
+    });
+
+    var addBtn = $('addProductBtn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        state.addingProduct = true;
+        state.openProduct = null;
+        renderProducts();
+        $('npName').focus();
+      });
+    }
+
+    if ($('npCancel')) {
+      $('npCancel').addEventListener('click', function () {
+        state.addingProduct = false;
+        renderProducts();
+      });
+      $('npSave').addEventListener('click', function () { saveNewProduct(this); });
+    }
+
+    if ($('epSave')) {
+      var current = state.openProduct;
+      $('epSave').addEventListener('click', function () { saveProduct(current, this); });
+      $('epToggleActive').addEventListener('click', function () {
+        var product = productByName(current);
+        setProductActive(current, product && product.Active === false, this);
+      });
+      $('epAddDoc').addEventListener('click', function () { addTemplateDoc(current, this); });
+      $('epNewDoc').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); addTemplateDoc(current, $('epAddDoc')); }
+      });
+      $('epDocs').addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-doc-template]');
+        if (btn) removeTemplateDoc(current, btn.dataset.docTemplate, btn);
+      });
+    }
+  }
+
+
+  /* ============================================================
+   * Writes — leads
+   * ============================================================ */
+  function toggleDocument(docId, leadId) {
+    var doc = state.documents.filter(function (d) { return d.DocID === docId; })[0];
+    if (!doc) return;
+
+    // Flip locally first so the checklist feels instant in the field, then put
+    // it back if the Sheet refuses the write.
+    var previous = doc.Shared;
+    doc.Shared = !previous;
+    renderDocList(leadId);
+
+    var row = $('docList').querySelector('[data-doc="' + docId + '"]');
+    if (row) row.classList.add('busy');
+
+    api.post('toggleDocument', { DocID: docId, Shared: doc.Shared })
+      .then(function (data) {
+        Object.assign(doc, data.document);
+        renderDocList(leadId);
+        renderList();
+      })
+      .catch(function (err) {
+        doc.Shared = previous;
+        renderDocList(leadId);
+        handle(err);
+      });
+  }
+
+  function addDocument(leadId, button) {
+    var input = $('newDocName');
+    var name = input.value.trim();
+    if (!name) { input.focus(); return; }
+
+    busy(button, 'Adding…');
+    api.post('addDocument', { LeadID: leadId, DocName: name })
+      .then(function (data) {
+        state.documents.push(data.document);
+        input.value = '';
+        renderDocList(leadId);
+        renderList();
+      })
+      .catch(handle)
+      .then(function () { done(button); });
+  }
+
+  function removeDocument(docId, leadId) {
+    var doc = state.documents.filter(function (d) { return d.DocID === docId; })[0];
+    if (!doc) return;
+    if (!confirm('Remove "' + doc.DocName + '" from this lead\'s checklist?')) return;
+
+    var row = $('docList').querySelector('[data-doc="' + docId + '"]');
+    if (row) row.classList.add('busy');
+
+    api.post('removeDocument', { DocID: docId })
+      .then(function () {
+        state.documents = state.documents.filter(function (d) { return d.DocID !== docId; });
+        renderDocList(leadId);
+        renderList();
+      })
+      .catch(function (err) {
+        if (row) row.classList.remove('busy');
+        handle(err);
+      });
+  }
+
+  function saveFollowUp(leadId, button) {
+    var note = $('fuNote').value.trim();
+    var date = $('fuDate').value;
+
+    if (!note) { $('fuNote').focus(); toast('Add a note for this meeting.', true); return; }
+    if (!date) { $('fuDate').focus(); toast('Pick the meeting date.', true); return; }
+
+    busy(button, 'Saving…');
+    api.post('addFollowUp', {
+      LeadID: leadId,
+      Date: date,
+      Note: note,
+      NextVisitDate: $('fuNextVisit').value,
+      NextStep: $('fuNextStep').value.trim()
+    })
+      .then(function (data) {
+        state.followUps.push(data.followUp);
+        if (data.lead) Object.assign(leadById(leadId), data.lead);
+        openDetail(leadId);      // re-render with the new entry in place
+        renderAll();
+        toast('Follow-up saved.');
+      })
+      .catch(function (err) {
+        done(button);
+        handle(err);
+      });
+  }
+
+  function saveDetails(lead, button) {
+    var name = $('edName').value.trim();
+    var phone = $('edPhone').value.trim();
+    var city = pickerValue('edCity');
+
+    $('edName').classList.toggle('invalid', !name);
+    $('edPhone').classList.toggle('invalid', !phone);
+
+    if (!name || !phone) {
+      (name ? $('edPhone') : $('edName')).focus();
+      toast('Name and phone are both needed.', true);
+      return;
+    }
+    if (!city) { toast('Pick or add a city.', true); return; }
+
+    busy(button, 'Saving…');
+    api.post('updateLead', {
+      LeadID: lead.LeadID,
+      Name: name,
+      Phone: phone,
+      Product: $('edProduct').value,
+      Address: $('edAddress').value.trim(),
+      City: city,
+      Area: pickerValue('edArea')
+    })
+      .then(function (data) {
+        Object.assign(lead, data.lead);
+        $('detailName').textContent = lead.Name;
+        renderLeadBlock(lead, false);
+        renderAll();
+        toast('Details updated.');
+      })
+      .catch(function (err) {
+        done(button);
+        handle(err);
+      });
+  }
+
+  function saveLead(button) {
+    var city = pickerValue('afCity');
+    var checks = { Name: $('afName'), Phone: $('afPhone'), Product: $('afProduct') };
+
+    var missing = Object.keys(checks).filter(function (key) {
+      var empty = !checks[key].value.trim();
+      checks[key].classList.toggle('invalid', empty);
+      return empty;
+    });
+    $('afCity').classList.toggle('invalid', !city);
+
+    if (missing.length || !city) {
+      (missing.length ? checks[missing[0]] : $('afCity')).focus();
+      toast('Name, phone, city and product are all needed.', true);
+      return;
+    }
+
+    busy(button, 'Saving…');
+    api.post('addLead', {
+      Name: $('afName').value.trim(),
+      Phone: $('afPhone').value.trim(),
+      Address: $('afAddress').value.trim(),
+      City: city,
+      Area: pickerValue('afArea'),
+      Product: $('afProduct').value,
+      NextVisitDate: $('afVisit').value,
+      NextStep: $('afNextStep').value.trim()
+    })
+      .then(function (data) {
+        state.leads.push(data.lead);
+        state.documents = state.documents.concat(data.documents);
+
+        var note = $('afNote').value.trim();
+        if (!note) return data.lead;
+
+        // The first meeting note becomes the first follow-up entry.
+        return api.post('addFollowUp', {
+          LeadID: data.lead.LeadID,
+          Date: todayIso(),
+          Note: note
+        }).then(function (result) {
+          state.followUps.push(result.followUp);
+          return data.lead;
+        });
+      })
+      .then(function (lead) {
+        $('addForm').reset();
+        renderAddForm();
+        closeSheets();
+        renderAll();
+        toast(lead.Name + ' added.');
+      })
+      .catch(handle)
+      .then(function () { done(button); });
+  }
+
+
+  /* ============================================================
+   * Writes — products
+   *
+   * A product rename cascades across Leads and DocTemplates on the
+   * server, so these re-read everything rather than trying to patch
+   * local state by hand.
+   * ============================================================ */
+  function refresh() {
+    return api.get().then(absorb);
+  }
+
+  function saveNewProduct(button) {
+    var name = $('npName').value.trim();
+    if (!name) { $('npName').focus(); toast('Give the product a name.', true); return; }
+
+    var docNames = $('npDocs').value.split(',')
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+
+    busy(button, 'Adding…');
+    api.post('addProduct', {
+      Product: name,
+      Description: $('npDesc').value.trim(),
+      DocNames: docNames
+    })
+      .then(refresh)
+      .then(function () {
+        state.addingProduct = false;
+        state.openProduct = name;
+        renderProducts();
+        renderAddForm();
+        toast(name + ' added.');
+      })
+      .catch(function (err) {
+        done(button);
+        handle(err);
+      });
+  }
+
+  function saveProduct(currentName, button) {
+    var newName = $('epName').value.trim();
+    if (!newName) { $('epName').focus(); toast('Give the product a name.', true); return; }
+
+    busy(button, 'Saving…');
+    api.post('updateProduct', {
+      Product: currentName,
+      NewProduct: newName,
+      Description: $('epDesc').value.trim()
+    })
+      .then(refresh)
+      .then(function () {
+        state.openProduct = newName;
+        renderProducts();
+        renderAll();
+        renderAddForm();
+        toast('Product saved.');
+      })
+      .catch(function (err) {
+        done(button);
+        handle(err);
+      });
+  }
+
+  function setProductActive(name, active, button) {
+    busy(button, active ? 'Switching on…' : 'Switching off…');
+    api.post('setProductActive', { Product: name, Active: active })
+      .then(function (data) {
+        var product = productByName(name);
+        if (product) product.Active = data.product.Active;
+        renderProducts();
+        renderAddForm();
+        toast(active
+          ? name + ' is back on your list.'
+          : name + ' switched off. Existing leads keep it.');
+      })
+      .catch(function (err) {
+        done(button);
+        handle(err);
+      });
+  }
+
+  function addTemplateDoc(product, button) {
+    var input = $('epNewDoc');
+    var name = input.value.trim();
+    if (!name) { input.focus(); return; }
+
+    busy(button, '…');
+    api.post('addDocTemplate', { Product: product, DocName: name })
+      .then(function (data) {
+        state.docTemplates.push(data.docTemplate);
+        renderProducts();
+        renderAddForm();
+      })
+      .catch(function (err) {
+        done(button);
+        handle(err);
+      });
+  }
+
+  function removeTemplateDoc(product, docName, button) {
+    button.disabled = true;
+    api.post('removeDocTemplate', { Product: product, DocName: docName })
+      .then(function () {
+        state.docTemplates = state.docTemplates.filter(function (t) {
+          return !(t.Product === product && t.DocName === docName);
+        });
+        renderProducts();
+        renderAddForm();
+      })
+      .catch(function (err) {
+        button.disabled = false;
+        handle(err);
+      });
+  }
+
+
+  /* ============================================================
+   * Add-lead form
+   * ============================================================ */
+  function renderAddForm() {
+    var offered = activeProducts();
+    $('afProduct').innerHTML = offered.length
+      ? offered.map(function (p) {
+          return '<option value="' + esc(p.Product) + '">' + esc(p.Product) + '</option>';
+        }).join('')
+      : '<option value="">Add a product first</option>';
+
+    $('afCityWrap').innerHTML =
+      pickerHtml('afCity', cityOptions(), '', '+ Add a new city', 'New city name');
+    wirePicker('afCity', renderAreaPicker);
+
+    renderAreaPicker();
+    renderProductBlurb();
+  }
+
+  function renderAreaPicker() {
+    $('afAreaWrap').innerHTML =
+      pickerHtml('afArea', areasIn(pickerValue('afCity') || 'all'), '', '+ Add a new area', 'New area name');
+    wirePicker('afArea');
+  }
+
+  function renderProductBlurb() {
+    var product = productByName($('afProduct').value);
+    var docs = templatesFor($('afProduct').value);
+
+    $('afProductDesc').textContent = product && product.Description ? product.Description : '';
+    $('afDocPreview').innerHTML = docs.length
+      ? docs.map(function (d) { return esc(d.DocName); }).join(' · ')
+      : '<span style="color:var(--ink-faint);">No documents set for this product yet. Add them under Products &amp; documents, or on the lead itself.</span>';
+  }
+
+
+  /* ============================================================
+   * Chrome
+   * ============================================================ */
+  var toastTimer = null;
+  function toast(message, isBad) {
+    var el = $('toast');
+    el.textContent = message;
+    el.classList.toggle('bad', !!isBad);
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, isBad ? 5000 : 2600);
+  }
+
+  function busy(button, label) {
+    button.dataset.label = button.dataset.label || button.textContent;
+    button.textContent = label;
+    button.disabled = true;
+  }
+
+  function done(button) {
+    if (!button) return;
+    if (button.dataset.label) button.textContent = button.dataset.label;
+    button.disabled = false;
+  }
+
+  function closeSheets() {
+    document.querySelectorAll('.sheet').forEach(function (s) { s.classList.remove('open'); });
+    $('menu').hidden = true;
+    state.activeLeadId = null;
+  }
+
+  function fail(message, detail) {
+    $('errorText').textContent = message;
+    $('errorDetail').textContent = detail || '';
+    device.dataset.state = 'error';
+    $('pageSub').textContent = 'Not connected';
+  }
+
+
+  /* ============================================================
+   * Login
+   * ============================================================ */
+  function showGate(errorMessage) {
+    closeSheets();
+    device.dataset.state = 'login';
+    $('pageSub').textContent = '';
+
+    var stored = session.load();
+    if (stored) {
+      $('gatePhone').value = stored.phone || '';
+      $('gateEmail').value = stored.email || '';
+    }
+
+    var box = $('gateError');
+    box.hidden = !errorMessage;
+    if (errorMessage) box.textContent = errorMessage;
+
+    $('gateTitle').textContent = CONFIG && CONFIG.agentName
+      ? 'Welcome back' : 'Sign in';
+    $('gateFoot').textContent = CONFIG && CONFIG.agentName
+      ? CONFIG.agentName + "'s LeadBook" : '';
+  }
+
+  function signIn(button) {
+    var phone = $('gatePhone').value.trim();
+    var email = $('gateEmail').value.trim();
+
+    if (digits(phone).length < 10) {
+      $('gatePhone').focus();
+      return showGateError('Enter your 10-digit mobile number.');
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      $('gateEmail').focus();
+      return showGateError('Enter a valid email address.');
+    }
+
+    busy(button, 'Signing in…');
+    fetch(CONFIG.appsScriptUrl, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login', payload: { Phone: phone, Email: email } })
+    })
+      .then(unwrap)
+      .then(function (result) {
+        session.save(
+          { token: result.token, phone: phone, email: email },
+          $('gateRemember').checked
+        );
+        $('gateError').hidden = true;
+        absorb(result.data);
+        ready();
+      })
+      .catch(function (err) {
+        done(button);
+        showGateError(err.message);
+      });
+  }
+
+  function showGateError(message) {
+    var box = $('gateError');
+    box.textContent = message;
+    box.hidden = false;
+  }
+
+  function signOut() {
+    session.clear();
+    state.leads = [];
+    state.followUps = [];
+    state.documents = [];
+    showGate();
+  }
+
+
+  /* ============================================================
+   * Wiring
+   * ============================================================ */
+  $('cityTabs').addEventListener('click', function (e) {
+    var tab = e.target.closest('.index-tab');
+    if (!tab) return;
+    state.city = tab.dataset.city;
+    state.area = 'all';
+    renderCityTabs();
+    renderAreaChips();
+    renderList();
+  });
+
+  $('areaRow').addEventListener('click', function (e) {
+    var chip = e.target.closest('.area-chip');
+    if (!chip) return;
+    state.area = chip.dataset.area;
+    renderAreaChips();
+    renderList();
+  });
+
+  $('productRow').addEventListener('click', function (e) {
+    var chip = e.target.closest('.product-chip');
+    if (!chip) return;
+    state.product = chip.dataset.productFilter;
+    renderProductChips();
+    renderList();
+  });
+
+  $('listWrap').addEventListener('click', function (e) {
+    var card = e.target.closest('.lead-card');
+    if (card) openDetail(card.dataset.lead);
+  });
+
+  $('searchInput').addEventListener('input', function () {
+    state.query = this.value;
+    $('searchClear').hidden = this.value.length === 0;
+    renderList();
+  });
+
+  $('searchClear').addEventListener('click', function () {
+    $('searchInput').value = '';
+    state.query = '';
+    this.hidden = true;
+    renderList();
+    $('searchInput').focus();
+  });
+
+  $('fabAdd').addEventListener('click', function () {
+    renderAddForm();
+    $('addSheet').classList.add('open');
+    $('afName').focus();
+  });
+
+  document.querySelectorAll('[data-close]').forEach(function (btn) {
+    btn.addEventListener('click', closeSheets);
+  });
+
+  // Wired once against whichever lead is open, so reopening the detail sheet
+  // never stacks a second listener on this button.
+  $('editLeadBtn').addEventListener('click', function () {
+    var lead = leadById(state.activeLeadId);
+    if (lead) renderLeadBlock(lead, true);
+  });
+
+  $('menuBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    $('menu').hidden = !$('menu').hidden;
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!$('menu').hidden && !e.target.closest('#menu')) $('menu').hidden = true;
+  });
+
+  $('menuProducts').addEventListener('click', function () {
+    $('menu').hidden = true;
+    state.openProduct = null;
+    state.addingProduct = false;
+    renderProducts();
+    $('productSheet').classList.add('open');
+  });
+
+  $('menuSignOut').addEventListener('click', function () {
+    $('menu').hidden = true;
+    signOut();
+  });
+
+  $('addForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    saveLead($('afSave'));
+  });
+
+  $('gateForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    signIn($('gateSubmit'));
+  });
+
+  $('afProduct').addEventListener('change', renderProductBlurb);
+  $('retryBtn').addEventListener('click', boot);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSheets();
+  });
+
+
+  /* ============================================================
+   * Boot
+   * ============================================================ */
+  function absorb(data) {
+    state.leads = data.leads || [];
+    state.followUps = data.followUps || [];
+    state.documents = data.documents || [];
+    state.products = data.products || [];
+    state.docTemplates = data.docTemplates || [];
+
+    // The Sheet's Config tab wins over the JSON for agent identity — it is the
+    // copy the agent can edit herself.
+    if (data.config) {
+      CONFIG.agentName = data.config.AgentName || CONFIG.agentName;
+      CONFIG.agentPhone = data.config.AgentPhone || CONFIG.agentPhone;
+      CONFIG.referralCode = data.config.ReferralCode || CONFIG.referralCode;
+    }
+  }
+
+  function ready() {
+    device.dataset.state = 'ready';
+    renderAll();
+    renderAddForm();
+  }
+
+  function boot() {
+    device.dataset.state = 'loading';
+    $('pageSub').textContent = 'Loading…';
+
+    loadConfig()
+      .then(function (config) {
+        CONFIG = config;
+        STORE_KEY = 'leadbook:' + (CONFIG.agentSlug || AGENT.slug || 'default');
+
+        // Catches the placeholder, and a mis-paste like a URL doubled onto
+        // itself, before it turns into a confusing network error.
+        if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(CONFIG.appsScriptUrl || '')) {
+          throw new Error('appsScriptUrl is not a Web App /exec URL: ' +
+                          (CONFIG.appsScriptUrl || '(empty)'));
+        }
+
+        var stored = session.load();
+        if (!stored || !stored.token) {
+          showGate();
+          return null;
+        }
+
+        // Signed in on this device already — go straight to the data.
+        session.token = stored.token;
+        return api.get().then(function (data) {
+          absorb(data);
+          ready();
+        });
+      })
+      .catch(function (err) {
+        if (err && err.auth) {
+          session.clear();
+          showGate('Your session has expired. Please sign in again.');
+          return;
+        }
+        fail(
+          navigator.onLine
+            ? 'LeadBook needs an internet connection and a working Sheet link.'
+            : 'You appear to be offline. LeadBook needs an internet connection.',
+          err.message
+        );
+      });
+  }
+
+  boot();
+})();
+</script>
+
+</body>
+</html>
