@@ -1,0 +1,14 @@
+{
+  "name": "leadbook-tests",
+  "version": "1.0.0",
+  "description": "Smoke tests for the LeadBook frontend.",
+  "scripts": {
+    "test": "node smoke.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

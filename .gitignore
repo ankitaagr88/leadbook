@@ -20,6 +20,11 @@
 !config.example.json
 !apps-script/
 !apps-script/*.gs
+!tests/
+!tests/smoke.js
+!tests/README.md
+!tests/package.json
+# node_modules and the lockfile stay out — jsdom is the only dependency.
 
 # --- verticals: config + redirect stubs + seed data only ---
 # Deliberately NOT `!insurance/*` — that would publish DOU.md and the proposal.
