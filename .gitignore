@@ -11,6 +11,7 @@
 *
 
 !.gitignore
+!CNAME
 !README.md
 !index.html
 !config.example.json
